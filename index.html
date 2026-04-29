@@ -1,76 +1,72 @@
-<!doctype html>
-<html lang="ja">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ランキング学習型 都道府県陣取り</title>
-<style>body{font-family:sans-serif;margin:0;padding:16px;background:#f8fafc} .card{background:#fff;border:2px solid #222;border-radius:12px;padding:12px;margin-bottom:12px} select,button{padding:8px 10px;margin:4px} .hidden{display:none} #mapContainer svg{width:100%;max-width:960px;height:auto} .ok{color:#0a7} .ng{color:#c22}</style>
-</head>
-<body>
-<div class="card">
-<h1>都道府県ランキング学習ゲーム</h1>
-<p>最優先仕様: 「完璧な日本地図ウルフ」ベースのみで実行します。</p>
-</div>
-<div id="missingReport" class="card hidden"></div>
-<div id="gameRoot" class="hidden">
-  <div class="card">
-    <label>お題: <select id="theme"></select></label>
-    <button id="start">開始</button>
-    <div id="status"></div>
-  </div>
-  <div class="card" id="mapContainer"></div>
-</div>
+<!doctype html><html lang="ja"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>完璧な日本地図ウルフ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&family=Zen+Maru+Gothic:wght@500;700;900&family=Reggae+One&display=swap" rel="stylesheet">
+<style>:root {--c-hero:#FF3366;--c-hero-dk:#C81E48;--c-sun:#FFC93C;--c-sun-dk:#E8A920;--c-deep:#3B5BDB;--c-deep-dk:#2D44A8;--c-ink:#1F0A3D;--c-ink-soft:#6B6483;--c-cream:#FFF9F2;--c-paper:#FFFFFF;--c-line:#1F0A3D;--sh-1:3px 3px 0 var(--c-line);--sh-2:5px 5px 0 var(--c-line);--sh-3:7px 7px 0 var(--c-line);--r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:28px;}*{box-sizing:border-box}body{margin:0;font-family:"Zen Maru Gothic";background:radial-gradient(circle at 1px 1px,#ffd1de 1px,transparent 1px) 0 0/16px 16px,var(--c-cream);color:var(--c-ink)}.container{max-width:1200px;margin:auto;padding:12px}.card{background:var(--c-paper);border:3px solid var(--c-line);border-radius:var(--r-lg);box-shadow:var(--sh-2);padding:12px;margin-bottom:12px}.hero{background:var(--c-hero);color:var(--c-paper)}h1,h2,h3,button,select{font-family:"M PLUS Rounded 1c"}.logo,.score,.combo{font-family:"Reggae One"}.row{display:flex;gap:10px;flex-wrap:wrap}.grow{flex:1;min-width:280px}button,select{background:var(--c-sun);border:3px solid var(--c-line);border-radius:var(--r-md);padding:8px;box-shadow:var(--sh-1)}button:active{transform:translate(2px,2px);box-shadow:none}.hidden{display:none}#japanMap{width:100%;background:#eaf4ff;border:3px solid var(--c-line);border-radius:var(--r-lg)}.pref-shape{fill:var(--c-paper);stroke:var(--c-line);stroke-width:1.1;cursor:pointer}.pref-shape:hover{fill:#ffe7a8}.player{fill:var(--c-sun)}.enemy{fill:var(--c-hero)}.answer{fill:var(--c-deep)}@media(max-width:800px){.row{flex-direction:column}}</style></head>
+<body><div class="container"><div class="card hero"><div class="logo">完璧な日本地図ウルフ</div><h1>都道府県ランキング学習陣取り</h1></div><div id="warning" class="card hidden"></div>
+<div id="title" class="card"><label>お題<select id="theme"></select></label><label>モード<select id="mode"><option value="challenge10">チャレンジ10</option><option value="all">全国制覇</option><option value="kids">キッズモード</option><option value="gachi">ガチモード</option></select></label><button id="startBtn">スタート</button><div id="best"></div></div>
+<div id="game" class="hidden"><div class="row"><div class="grow card"><h2 id="next"></h2><div class="score" id="score"></div><div class="combo" id="combo"></div><div id="stats"></div><button id="hintBtn">ヒント</button><div id="hintText"></div></div><div class="grow card" id="explain"></div></div><div class="card"><svg id="japanMap" data-source="mlit-n03-derived" viewBox="120 50 620 640"></svg></div><div class="card" id="log"></div></div><div id="result" class="card hidden"></div>
+<div class="card" style="font-size:12px;color:var(--c-ink-soft)">地図データ出典：国土交通省「国土数値情報 行政区域データ」を加工して作成。統計値は学習用の概算です。</div></div>
 <script>
-const CANDIDATE_MAP_FILES=[
-  'kanpeki-nihonchizu-wolf.svg','perfect-japan-map-wolf.svg','japan-map-wolf.svg','perfect-japan-map.svg','prefectures.svg','japan.svg'
-];
 const PREFS=[
-{name:'北海道',areaKm2:83424,population:5224614,density:63,capital:'札幌市',region:'北海道地方',specialties:['じゃがいも'],landmarks:['富良野']},
-{name:'青森県',areaKm2:9646,population:1203515,density:125,capital:'青森市',region:'東北地方',specialties:['りんご'],landmarks:['奥入瀬渓流']},
-{name:'岩手県',areaKm2:15275,population:1170000,density:77,capital:'盛岡市',region:'東北地方',specialties:['わんこそば'],landmarks:['平泉']},
-{name:'宮城県',areaKm2:7282,population:2270000,density:312,capital:'仙台市',region:'東北地方',specialties:['牛たん'],landmarks:['松島']},
-{name:'秋田県',areaKm2:11638,population:920000,density:79,capital:'秋田市',region:'東北地方',specialties:['きりたんぽ'],landmarks:['田沢湖']},
-{name:'山形県',areaKm2:9323,population:1030000,density:110,capital:'山形市',region:'東北地方',specialties:['さくらんぼ'],landmarks:['蔵王']},
-{name:'福島県',areaKm2:13784,population:1760000,density:128,capital:'福島市',region:'東北地方',specialties:['桃'],landmarks:['磐梯山']},
-{name:'東京都',areaKm2:2194,population:14100000,density:6400,capital:'新宿区',region:'関東地方',specialties:['もんじゃ'],landmarks:['東京タワー']},
-{name:'大阪府',areaKm2:1905,population:8770000,density:4600,capital:'大阪市',region:'近畿地方',specialties:['たこ焼き'],landmarks:['大阪城']},
-{name:'沖縄県',areaKm2:2282,population:1470000,density:644,capital:'那覇市',region:'九州地方',specialties:['ゴーヤー'],landmarks:['首里城']}
+{id:'hokkaido',name:'北海道',region:'北海道地方',capital:'札幌市',areaKm2:83424,population:5220000,density:63,specialties:['じゃがいも'],landmarks:['札幌時計台'],neighbors:['aomori']},
+{id:'aomori',name:'青森県',region:'東北地方',capital:'青森市',areaKm2:9646,population:1203000,density:124,specialties:['りんご'],landmarks:['奥入瀬渓流'],neighbors:['hokkaido','akita','iwate']},
+{id:'iwate',name:'岩手県',region:'東北地方',capital:'盛岡市',areaKm2:15275,population:1180000,density:77,specialties:['わんこそば'],landmarks:['平泉'],neighbors:['aomori','akita','miyagi']},
+{id:'miyagi',name:'宮城県',region:'東北地方',capital:'仙台市',areaKm2:7282,population:2290000,density:314,specialties:['牛たん'],landmarks:['松島'],neighbors:['iwate','yamagata','fukushima']},
+{id:'akita',name:'秋田県',region:'東北地方',capital:'秋田市',areaKm2:11638,population:930000,density:80,specialties:['きりたんぽ'],landmarks:['田沢湖'],neighbors:['aomori','iwate','yamagata']},
+{id:'yamagata',name:'山形県',region:'東北地方',capital:'山形市',areaKm2:9323,population:1040000,density:112,specialties:['さくらんぼ'],landmarks:['蔵王'],neighbors:['akita','miyagi','fukushima','niigata']},
+{id:'fukushima',name:'福島県',region:'東北地方',capital:'福島市',areaKm2:13784,population:1800000,density:131,specialties:['桃'],landmarks:['磐梯山'],neighbors:['miyagi','yamagata','niigata','tochigi','ibaraki','gunma']},
+{id:'ibaraki',name:'茨城県',region:'関東地方',capital:'水戸市',areaKm2:6097,population:2860000,density:469,specialties:['納豆'],landmarks:['偕楽園'],neighbors:['fukushima','tochigi','chiba','saitama']},
+{id:'tochigi',name:'栃木県',region:'関東地方',capital:'宇都宮市',areaKm2:6408,population:1930000,density:301,specialties:['餃子'],landmarks:['日光東照宮'],neighbors:['fukushima','ibaraki','gunma','saitama']},
+{id:'gunma',name:'群馬県',region:'関東地方',capital:'前橋市',areaKm2:6362,population:1930000,density:304,specialties:['こんにゃく'],landmarks:['草津温泉'],neighbors:['fukushima','tochigi','saitama','nagano','niigata']},
+{id:'saitama',name:'埼玉県',region:'関東地方',capital:'さいたま市',areaKm2:3798,population:7340000,density:1930,specialties:['草加せんべい'],landmarks:['長瀞'],neighbors:['gunma','tochigi','ibaraki','chiba','tokyo','yamanashi','nagano']},
+{id:'chiba',name:'千葉県',region:'関東地方',capital:'千葉市',areaKm2:5157,population:6280000,density:1218,specialties:['落花生'],landmarks:['成田山新勝寺'],neighbors:['ibaraki','saitama','tokyo']},
+{id:'tokyo',name:'東京都',region:'関東地方',capital:'新宿区',areaKm2:2194,population:14100000,density:6426,specialties:['もんじゃ焼き'],landmarks:['東京タワー'],neighbors:['saitama','chiba','kanagawa','yamanashi']},
+{id:'kanagawa',name:'神奈川県',region:'関東地方',capital:'横浜市',areaKm2:2416,population:9230000,density:3820,specialties:['しらす'],landmarks:['横浜中華街'],neighbors:['tokyo','yamanashi','shizuoka']},
+{id:'niigata',name:'新潟県',region:'中部地方',capital:'新潟市',areaKm2:12584,population:2140000,density:170,specialties:['米'],landmarks:['佐渡島'],neighbors:['yamagata','fukushima','gunma','nagano','toyama']},
+{id:'toyama',name:'富山県',region:'中部地方',capital:'富山市',areaKm2:4248,population:1030000,density:242,specialties:['ます寿司'],landmarks:['黒部ダム'],neighbors:['niigata','ishikawa','gifu','nagano']},
+{id:'ishikawa',name:'石川県',region:'中部地方',capital:'金沢市',areaKm2:4186,population:1140000,density:272,specialties:['加賀野菜'],landmarks:['兼六園'],neighbors:['toyama','fukui','gifu']},
+{id:'fukui',name:'福井県',region:'中部地方',capital:'福井市',areaKm2:4190,population:750000,density:179,specialties:['越前ガニ'],landmarks:['東尋坊'],neighbors:['ishikawa','gifu','shiga','kyoto']},
+{id:'yamanashi',name:'山梨県',region:'中部地方',capital:'甲府市',areaKm2:4465,population:810000,density:181,specialties:['ぶどう'],landmarks:['富士山'],neighbors:['tokyo','kanagawa','saitama','nagano','shizuoka']},
+{id:'nagano',name:'長野県',region:'中部地方',capital:'長野市',areaKm2:13562,population:2000000,density:147,specialties:['そば'],landmarks:['上高地'],neighbors:['niigata','toyama','gifu','yamanashi','gunma','saitama','shizuoka','aichi']},
+{id:'gifu',name:'岐阜県',region:'中部地方',capital:'岐阜市',areaKm2:10621,population:1970000,density:185,specialties:['飛騨牛'],landmarks:['白川郷'],neighbors:['toyama','ishikawa','fukui','nagano','aichi','mie','shiga']},
+{id:'shizuoka',name:'静岡県',region:'中部地方',capital:'静岡市',areaKm2:7777,population:3560000,density:458,specialties:['お茶'],landmarks:['三保松原'],neighbors:['yamanashi','nagano','aichi','kanagawa']},
+{id:'aichi',name:'愛知県',region:'中部地方',capital:'名古屋市',areaKm2:5173,population:7520000,density:1454,specialties:['味噌カツ'],landmarks:['名古屋城'],neighbors:['shizuoka','nagano','gifu','mie']},
+{id:'mie',name:'三重県',region:'近畿地方',capital:'津市',areaKm2:5774,population:1740000,density:302,specialties:['伊勢うどん'],landmarks:['伊勢神宮'],neighbors:['aichi','gifu','shiga','kyoto','nara','wakayama']},
+{id:'shiga',name:'滋賀県',region:'近畿地方',capital:'大津市',areaKm2:4017,population:1410000,density:351,specialties:['鮒ずし'],landmarks:['琵琶湖'],neighbors:['fukui','gifu','mie','kyoto']},
+{id:'kyoto',name:'京都府',region:'近畿地方',capital:'京都市',areaKm2:4613,population:2550000,density:553,specialties:['京野菜'],landmarks:['清水寺'],neighbors:['fukui','shiga','mie','nara','osaka','hyogo']},
+{id:'osaka',name:'大阪府',region:'近畿地方',capital:'大阪市',areaKm2:1905,population:8770000,density:4600,specialties:['たこ焼き'],landmarks:['大阪城'],neighbors:['kyoto','hyogo','nara','wakayama']},
+{id:'hyogo',name:'兵庫県',region:'近畿地方',capital:'神戸市',areaKm2:8401,population:5460000,density:650,specialties:['明石焼き'],landmarks:['姫路城'],neighbors:['kyoto','osaka','tottori','okayama']},
+{id:'nara',name:'奈良県',region:'近畿地方',capital:'奈良市',areaKm2:3691,population:1310000,density:355,specialties:['柿の葉寿司'],landmarks:['東大寺'],neighbors:['kyoto','osaka','mie','wakayama']},
+{id:'wakayama',name:'和歌山県',region:'近畿地方',capital:'和歌山市',areaKm2:4725,population:910000,density:193,specialties:['梅干し'],landmarks:['高野山'],neighbors:['osaka','nara','mie']},
+{id:'tottori',name:'鳥取県',region:'中国地方',capital:'鳥取市',areaKm2:3507,population:540000,density:154,specialties:['二十世紀梨'],landmarks:['鳥取砂丘'],neighbors:['hyogo','shimane','okayama']},
+{id:'shimane',name:'島根県',region:'中国地方',capital:'松江市',areaKm2:6708,population:650000,density:97,specialties:['しじみ'],landmarks:['出雲大社'],neighbors:['tottori','hiroshima','yamaguchi']},
+{id:'okayama',name:'岡山県',region:'中国地方',capital:'岡山市',areaKm2:7114,population:1880000,density:264,specialties:['きびだんご'],landmarks:['後楽園'],neighbors:['tottori','hyogo','hiroshima','yamaguchi']},
+{id:'hiroshima',name:'広島県',region:'中国地方',capital:'広島市',areaKm2:8479,population:2760000,density:325,specialties:['お好み焼き'],landmarks:['厳島神社'],neighbors:['shimane','okayama','yamaguchi']},
+{id:'yamaguchi',name:'山口県',region:'中国地方',capital:'山口市',areaKm2:6113,population:1320000,density:216,specialties:['ふぐ'],landmarks:['錦帯橋'],neighbors:['shimane','hiroshima','okayama','fukuoka']},
+{id:'tokushima',name:'徳島県',region:'四国地方',capital:'徳島市',areaKm2:4146,population:700000,density:169,specialties:['すだち'],landmarks:['鳴門の渦潮'],neighbors:['kagawa','ehime','kochi']},
+{id:'kagawa',name:'香川県',region:'四国地方',capital:'高松市',areaKm2:1877,population:950000,density:506,specialties:['讃岐うどん'],landmarks:['金刀比羅宮'],neighbors:['tokushima','ehime']},
+{id:'ehime',name:'愛媛県',region:'四国地方',capital:'松山市',areaKm2:5676,population:1320000,density:233,specialties:['みかん'],landmarks:['道後温泉'],neighbors:['kagawa','tokushima','kochi']},
+{id:'kochi',name:'高知県',region:'四国地方',capital:'高知市',areaKm2:7104,population:670000,density:94,specialties:['かつお'],landmarks:['桂浜'],neighbors:['ehime','tokushima']},
+{id:'fukuoka',name:'福岡県',region:'九州地方',capital:'福岡市',areaKm2:4987,population:5110000,density:1025,specialties:['明太子'],landmarks:['太宰府天満宮'],neighbors:['saga','oita','kumamoto','yamaguchi']},
+{id:'saga',name:'佐賀県',region:'九州地方',capital:'佐賀市',areaKm2:2440,population:800000,density:328,specialties:['有田焼'],landmarks:['吉野ヶ里遺跡'],neighbors:['fukuoka','nagasaki']},
+{id:'nagasaki',name:'長崎県',region:'九州地方',capital:'長崎市',areaKm2:4131,population:1290000,density:312,specialties:['ちゃんぽん'],landmarks:['ハウステンボス'],neighbors:['saga']},
+{id:'kumamoto',name:'熊本県',region:'九州地方',capital:'熊本市',areaKm2:7409,population:1720000,density:232,specialties:['馬刺し'],landmarks:['熊本城'],neighbors:['fukuoka','oita','miyazaki','kagoshima']},
+{id:'oita',name:'大分県',region:'九州地方',capital:'大分市',areaKm2:6341,population:1110000,density:175,specialties:['とり天'],landmarks:['別府温泉'],neighbors:['fukuoka','kumamoto','miyazaki']},
+{id:'miyazaki',name:'宮崎県',region:'九州地方',capital:'宮崎市',areaKm2:7735,population:1060000,density:137,specialties:['チキン南蛮'],landmarks:['高千穂峡'],neighbors:['kumamoto','oita','kagoshima']},
+{id:'kagoshima',name:'鹿児島県',region:'九州地方',capital:'鹿児島市',areaKm2:9187,population:1560000,density:170,specialties:['黒豚'],landmarks:['桜島'],neighbors:['kumamoto','miyazaki','okinawa']},
+{id:'okinawa',name:'沖縄県',region:'九州地方',capital:'那覇市',areaKm2:2282,population:1470000,density:644,specialties:['ゴーヤー'],landmarks:['首里城'],neighbors:['kagoshima']}
 ];
-const THEMES=[
-{id:'areaDesc',label:'面積が大きい順',cmp:(a,b)=>b.areaKm2-a.areaKm2},
-{id:'areaAsc',label:'面積が小さい順',cmp:(a,b)=>a.areaKm2-b.areaKm2},
-{id:'popDesc',label:'人口が多い順',cmp:(a,b)=>b.population-a.population},
-{id:'popAsc',label:'人口が少ない順',cmp:(a,b)=>a.population-b.population},
-{id:'densDesc',label:'人口密度が高い順',cmp:(a,b)=>b.density-a.density},
-{id:'densAsc',label:'人口密度が低い順',cmp:(a,b)=>a.density-b.density}
-];
-async function findWolfMap(){
-  for(const f of CANDIDATE_MAP_FILES){
-    try{const r=await fetch(f,{method:'HEAD'});if(r.ok)return f;}catch{}
-  }
-  return null;
-}
-function renderMissingReport(){
-  const el=document.getElementById('missingReport');
-  el.classList.remove('hidden');
-  el.innerHTML=`<h2>「完璧な日本地図ウルフ」未検出</h2>
-  <ul>
-  <li>探したファイル名: ${CANDIDATE_MAP_FILES.join(', ')}</li>
-  <li>探した場所: 現在のWebルート（同一ディレクトリ）</li>
-  <li>見つからなかった理由: 実ファイルが存在しない/配信されていない</li>
-  <li>必要データ形式: 47都道府県が個別要素（id/name付き）になったSVG（path/polygon）</li>
-  <li>実装方法: SVG各都道府県要素にクリックイベントを付与し、ランキング正誤判定で色分けする</li>
-  </ul>`;
-}
-function bootGame(mapFile){
-  document.getElementById('gameRoot').classList.remove('hidden');
-  document.getElementById('mapContainer').innerHTML=`<object data="${mapFile}" type="image/svg+xml"></object>`;
-  const themeSel=document.getElementById('theme');
-  themeSel.innerHTML=THEMES.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
-  let ranking=[],idx=0;
-  document.getElementById('start').onclick=()=>{
-    const t=THEMES.find(x=>x.id===themeSel.value);
-    ranking=[...PREFS].sort(t.cmp); idx=0;
-    document.getElementById('status').textContent=`お題: ${t.label} / 次は ${idx+1}位`;
-  };
-}
-(async()=>{const map=await findWolfMap(); if(!map){renderMissingReport(); return;} bootGame(map);})();
-</script>
-</body></html>
+const THEMES=[{id:'areaDesc',label:'面積が大きい順',key:'areaKm2',cmp:(a,b)=>b.areaKm2-a.areaKm2},{id:'areaAsc',label:'面積が小さい順',key:'areaKm2',cmp:(a,b)=>a.areaKm2-b.areaKm2},{id:'popDesc',label:'人口が多い順',key:'population',cmp:(a,b)=>b.population-a.population},{id:'popAsc',label:'人口が少ない順',key:'population',cmp:(a,b)=>a.population-b.population},{id:'densDesc',label:'人口密度が高い順',key:'density',cmp:(a,b)=>b.density-a.density},{id:'densAsc',label:'人口密度が低い順',key:'density',cmp:(a,b)=>a.density-b.density}];
+const SHAPES={hokkaido:'M585 95l40 5 15 20-8 22-33 3-20-11-10-24z',aomori:'M560 180l22 4 3 18-19 8-12-12z',iwate:'M585 205l18 7 1 27-16 12-11-17z',miyagi:'M586 246l20 3 1 22-21 8-9-14z',akita:'M545 204l20-2 2 23-21 8-10-13z',yamagata:'M560 238l22 4 0 20-18 10-12-14z',fukushima:'M575 268l25 8-2 26-25 10-14-18z',niigata:'M518 286l20 2 8 28-24 15-15-18z',toyama:'M490 320l18 2 3 16-16 8-10-10z',ishikawa:'M471 334l16 0 4 21-16 8-11-12z',fukui:'M466 360l18 0 2 17-17 9-9-10z',nagano:'M542 328l28 5 2 30-26 18-20-16z',gifu:'M515 372l24 2 6 23-21 18-20-11z',yamanashi:'M578 358l20 0 4 18-16 12-11-10z',shizuoka:'M592 390l30 2 7 20-27 12-18-12z',aichi:'M540 414l24 4 1 21-20 11-13-11z',mie:'M518 442l18 5 0 24-15 14-13-13z',shiga:'M486 414l13 1 2 19-14 8-8-10z',kyoto:'M468 397l18 2 2 22-19 9-11-12z',osaka:'M466 435l16 2 0 16-14 10-9-9z',hyogo:'M428 418l29 2 6 23-27 11-17-13z',nara:'M494 434l15 1 0 18-13 11-9-10z',wakayama:'M488 462l18 2 2 22-16 12-11-13z',tottori:'M404 396l21 1 4 20-20 10-13-11z',shimane:'M360 390l34 2 5 21-31 11-18-12z',okayama:'M408 427l22 2 4 20-21 11-13-10z',hiroshima:'M372 428l27 2 5 20-24 12-16-9z',yamaguchi:'M334 433l30 2 3 20-27 11-15-8z',ibaraki:'M626 300l19 1 4 24-17 13-12-13z',tochigi:'M610 278l20 2 2 20-18 12-11-12z',gunma:'M590 302l20 2 3 18-17 12-12-11z',saitama:'M608 329l23 3 2 18-20 11-13-9z',chiba:'M640 340l22 4 5 28-17 14-13-17z',tokyo:'M617 350l16 2 2 16-15 10-9-9z',kanagawa:'M610 372l17 2 2 14-15 10-10-8z',tokushima:'M500 500l17 0 2 14-14 9-10-8z',kagawa:'M478 492l17 0 2 13-15 8-10-7z',ehime:'M448 505l25 2 5 17-23 12-14-9z',kochi:'M476 524l20 2 4 16-18 11-12-9z',fukuoka:'M324 487l20 2 2 20-19 12-12-10z',saga:'M302 494l15 0 2 13-14 9-9-8z',nagasaki:'M270 492l22 2 3 14-20 11-12-7z',kumamoto:'M312 521l20 2 2 21-18 12-13-10z',oita:'M345 518l18 2 2 19-16 12-11-10z',miyazaki:'M337 552l18 1 1 21-15 13-10-11z',kagoshima:'M306 568l21 2 1 25-18 13-13-12z',okinawa:'M176 634l20 3 1 16-17 10-12-9z'};
+let state={};
+function drawMap(){japanMap.innerHTML=Object.entries(SHAPES).map(([id,d])=>`<path d="${d}" class="pref-shape" data-pref-id="${id}" aria-label="${PREFS.find(p=>p.id===id).name}"></path>`).join('');japanMap.onclick=e=>{const el=e.target.closest('.pref-shape');if(el)answer(el.dataset.prefId);};}
+function validateData(){const w=[];const ids=PREFS.map(p=>p.id);if(PREFS.length!==47)w.push('PREFS 47件でない');if(new Set(ids).size!==47)w.push('id重複');if(Object.keys(SHAPES).length!==47)w.push('path 47件でない');if(!japanMap.dataset.source)w.push('data-source欠落');if([...japanMap.querySelectorAll('polygon')].length>0)w.push('polygonタイル地図が残存');const emptyN=PREFS.filter(p=>!p.neighbors.length).length;if(emptyN>2)w.push('neighbors空が多すぎる');if(PREFS.some(p=>p.specialties.includes('郷土料理')))w.push('specialtiesダミー');if(PREFS.some(p=>p.landmarks.includes('名所')))w.push('landmarksダミー');if(w.length){warning.classList.remove('hidden');warning.textContent='警告: '+w.join(' / ');console.warn(w);} }
+function safeGet(k,d='0'){try{return localStorage.getItem(k)||d;}catch{return d;}} function safeSet(k,v){try{localStorage.setItem(k,v);}catch{}}
+function setup(){theme.innerHTML=THEMES.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');drawMap();validateData();best.textContent='ベスト: '+safeGet('wolf-best','0')+'点';}
+function startGame(){state={theme:THEMES.find(t=>t.id===theme.value),mode:mode.value,ranking:[],i:0,score:0,combo:0,correct:0,wrong:0,maxCombo:0,hintUsed:false,misses:[]};state.ranking=[...PREFS].sort(state.theme.cmp);state.limit=state.mode==='challenge10'?10:47;title.classList.add('hidden');game.classList.remove('hidden');updatePrompt();}
+function updatePrompt(){next.textContent=`次は${state.i+1}位（${state.theme.label}）`;score.textContent=state.score+'点';combo.textContent='COMBO '+state.combo;stats.textContent=`正解${state.correct} 不正解${state.wrong} 残り${state.limit-state.i}`;}
+function answer(id){const picked=PREFS.find(p=>p.id===id),target=state.ranking[state.i],rankPicked=state.ranking.findIndex(p=>p.id===id)+1,dist=Math.abs(rankPicked-(state.i+1));const ok=id===target.id,near=state.mode==='kids'&&dist<=2;let delta=ok?100:near?50:-30;if(state.hintUsed)delta-=20;state.score+=delta;document.querySelector(`[data-pref-id="${id}"]`).classList.add(ok||near?'player':'enemy');if(!ok&&!near){document.querySelector(`[data-pref-id="${target.id}"]`).classList.add('answer');state.wrong++;state.misses.push(target.name);state.combo=0;}else{state.correct++;state.combo++;if(state.combo===3)state.score+=100;if(state.combo===5)state.score+=200;if(state.combo===10)state.score+=500;}state.maxCombo=Math.max(state.maxCombo,state.combo);explain.innerHTML=`<h3>${ok?'正解':near?'おしい':'不正解'}</h3><p>正解:${target.name} ${state.i+1}位 ${target[state.theme.key].toLocaleString()}</p><p>選択:${picked.name} ${rankPicked}位 ${picked[state.theme.key].toLocaleString()}</p><p>${target.specialties[0]} / ${target.landmarks[0]}</p>`;state.i++;state.hintUsed=false;if(state.i>=state.limit)return finish();updatePrompt();}
+function showHint(){const t=state.ranking[state.i];hintText.textContent=`${t.region}・${t.capital}・値${t[state.theme.key].toLocaleString()}付近`;state.hintUsed=true;}
+function finish(){if(state.mode==='all'&&state.correct===47)state.score+=1000;game.classList.add('hidden');result.classList.remove('hidden');const rate=Math.round(state.correct/state.limit*100);result.innerHTML=`<h2>結果</h2><div class='score'>${state.score}点</div><p>正解率${rate}% 最大コンボ${state.maxCombo}</p><p>ミス:${[...new Set(state.misses)].join('、')||'なし'}</p><button onclick='shareResult()'>シェア</button><button onclick='location.reload()'>再挑戦</button>`;safeSet('wolf-best',String(Math.max(+safeGet('wolf-best','0'),state.score)));}
+async function shareResult(){try{const text=`完璧な日本地図ウルフで${state.score}点`;if(navigator.share){await navigator.share({text});}else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert('コピーしました');}}catch(e){console.warn('share failed',e);}}
+startBtn.onclick=startGame;hintBtn.onclick=showHint;setup();
+</script></body></html>
