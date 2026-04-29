@@ -1,63 +1,76 @@
 <!doctype html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Neo-Pop 都道府県陣取りゲーム</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --c-hero:#FF3366;--c-hero-dk:#C81E48;--c-sun:#FFC93C;--c-sun-dk:#E8A920;--c-deep:#3B5BDB;--c-deep-dk:#2D44A8;--c-ink:#1F0A3D;--c-ink-soft:#6B6483;--c-cream:#FFF9F2;--c-paper:#FFFFFF;--c-line:#1F0A3D;
-      --sh-1:3px 3px 0 var(--c-line);--sh-2:5px 5px 0 var(--c-line);--sh-3:7px 7px 0 var(--c-line);
-      --r-sm:8px;--r-md:14px;--r-lg:20px;--r-xl:28px;
-    }
-    *{box-sizing:border-box} body{margin:0;font-family:"Zen Maru Gothic",sans-serif;background:var(--c-cream);color:var(--c-ink)}
-    .app{max-width:1280px;margin:auto;padding:12px}.screen{display:none}.screen.active{display:block}
-    .card{background:var(--c-paper);border:3px solid var(--c-line);border-radius:var(--r-lg);box-shadow:var(--sh-2);padding:14px;margin-bottom:12px}
-    h1,h2,h3{margin:.2em 0}.row{display:flex;gap:8px;flex-wrap:wrap}.btn{border:3px solid var(--c-line);border-radius:var(--r-md);padding:10px 14px;font-weight:900;background:var(--c-sun);box-shadow:var(--sh-1);cursor:pointer}.btn:active{transform:translate(2px,2px);box-shadow:none}.btn.main{background:var(--c-deep);color:#fff}.btn.pink{background:var(--c-hero);color:#fff}.btn:disabled{opacity:.5;cursor:not-allowed}
-    .layout{display:grid;grid-template-columns:1.4fr .9fr;gap:12px}.panel{background:var(--c-paper);border:3px solid var(--c-line);border-radius:var(--r-lg);box-shadow:var(--sh-2);padding:8px}
-    .map-wrap{background:#d7f0ff;border:3px solid var(--c-line);border-radius:var(--r-lg);padding:6px;overflow:auto}
-    svg{min-width:900px;width:100%;height:auto}
-    .pref-shape{stroke:var(--c-line);stroke-width:2;fill:var(--c-cream);cursor:pointer;transition:transform .12s ease}
-    .pref-shape:hover{transform:translateY(-1px)} .pref-shape.player{fill:var(--c-deep)} .pref-shape.enemy{fill:var(--c-hero)} .pref-shape.attackable{fill:var(--c-sun)} .pref-shape.selected{stroke-width:5}
-    .pref-label{font-size:8px;fill:var(--c-ink);font-weight:700;pointer-events:none}
-    .legend{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:4px 8px;border:2px solid var(--c-line);border-radius:999px;font-weight:700}.chip.p{background:var(--c-deep);color:#fff}.chip.e{background:var(--c-hero);color:#fff}.chip.a{background:var(--c-sun)}
-    .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}.stat{background:var(--c-cream);border:2px solid var(--c-line);border-radius:var(--r-sm);padding:6px;font-size:13px;font-weight:700}
-    .log{height:190px;overflow:auto;background:var(--c-ink);color:#fff;border-radius:var(--r-sm);padding:8px}
-    @media (max-width:900px){.layout{grid-template-columns:1fr}svg{min-width:780px}}
-  </style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ランキング学習型 都道府県陣取り</title>
+<style>body{font-family:sans-serif;margin:0;padding:16px;background:#f8fafc} .card{background:#fff;border:2px solid #222;border-radius:12px;padding:12px;margin-bottom:12px} select,button{padding:8px 10px;margin:4px} .hidden{display:none} #mapContainer svg{width:100%;max-width:960px;height:auto} .ok{color:#0a7} .ng{color:#c22}</style>
 </head>
 <body>
-<div class="app">
-  <section id="titleScreen" class="screen active"><div class="card"><h1>🗾 Neo-Pop 都道府県陣取りゲーム</h1><p>正確な位置関係の日本地図で、県をおぼえながら陣取りバトル！</p><div class="row"><select id="difficultySelect" class="btn"><option value="easy">かんたん</option><option value="normal" selected>ふつう</option><option value="hard">むずかしい</option></select><button id="startBtn" class="btn main">はじめる</button></div><div id="recordCard"></div></div></section>
-  <section id="baseScreen" class="screen"><div class="card"><h2>本拠地をえらぼう</h2><div class="map-wrap"><svg id="baseMap" viewBox="0 0 920 620"></svg></div><p id="baseMsg"></p><button id="baseConfirmBtn" class="btn main" disabled>ここに決定</button></div></section>
-  <section id="gameScreen" class="screen"><div class="layout"><div class="panel"><div class="map-wrap"><svg id="gameMap" viewBox="0 0 920 620"></svg></div><div class="legend"><span class="chip">未獲得</span><span class="chip p">プレイヤー</span><span class="chip e">敵AI</span><span class="chip a">攻撃可能</span></div></div><div class="panel"><p id="nextStep"></p><div class="stats" id="stats"></div><div class="card" id="selectedInfo">選択中: なし</div><div class="row"><button id="attackBtn" class="btn main" disabled>この県を攻める</button><button id="expeditionBtn" class="btn">遠征</button></div><h3>ログ</h3><div class="log" id="gameLog"></div></div></div></section>
-  <section id="quizScreen" class="screen"><div class="card" id="quizCard"><h2>クイズ</h2><p id="quizQ"></p><div id="quizOptions"></div><p id="quizResult"></p><p id="quizExp"></p><div class="row"><button id="hintBtn" class="btn">ヒント</button><button id="quizNextBtn" class="btn main" style="display:none">次のターン</button></div></div></section>
-  <section id="resultScreen" class="screen"><div class="card"><h2 id="resultTitle"></h2><p id="resultSummary"></p><div id="finalStats"></div><button id="retryBtn" class="btn main">もう一度</button></div></section>
+<div class="card">
+<h1>都道府県ランキング学習ゲーム</h1>
+<p>最優先仕様: 「完璧な日本地図ウルフ」ベースのみで実行します。</p>
+</div>
+<div id="missingReport" class="card hidden"></div>
+<div id="gameRoot" class="hidden">
+  <div class="card">
+    <label>お題: <select id="theme"></select></label>
+    <button id="start">開始</button>
+    <div id="status"></div>
+  </div>
+  <div class="card" id="mapContainer"></div>
 </div>
 <script>
-// data
-const PREFS=[['hokkaido','北海道','北海道地方','札幌市',['aomori']],['aomori','青森県','東北地方','青森市',['akita','iwate','hokkaido']],['iwate','岩手県','東北地方','盛岡市',['aomori','akita','miyagi']],['miyagi','宮城県','東北地方','仙台市',['iwate','akita','yamagata','fukushima']],['akita','秋田県','東北地方','秋田市',['aomori','iwate','miyagi','yamagata']],['yamagata','山形県','東北地方','山形市',['akita','miyagi','fukushima','niigata']],['fukushima','福島県','東北地方','福島市',['miyagi','yamagata','niigata','tochigi','ibaraki','gunma']],['ibaraki','茨城県','関東地方','水戸市',['fukushima','tochigi','saitama','chiba']],['tochigi','栃木県','関東地方','宇都宮市',['fukushima','ibaraki','gunma','saitama']],['gunma','群馬県','関東地方','前橋市',['fukushima','tochigi','saitama','niigata','nagano']],['saitama','埼玉県','関東地方','さいたま市',['ibaraki','tochigi','gunma','tokyo','chiba','yamanashi']],['chiba','千葉県','関東地方','千葉市',['ibaraki','saitama','tokyo']],['tokyo','東京都','関東地方','新宿区',['saitama','chiba','kanagawa','yamanashi']],['kanagawa','神奈川県','関東地方','横浜市',['tokyo','yamanashi','shizuoka']],['niigata','新潟県','中部地方','新潟市',['yamagata','fukushima','gunma','nagano','toyama']],['toyama','富山県','中部地方','富山市',['niigata','nagano','gifu','ishikawa']],['ishikawa','石川県','中部地方','金沢市',['toyama','gifu','fukui']],['fukui','福井県','中部地方','福井市',['ishikawa','gifu','shiga','kyoto']],['yamanashi','山梨県','中部地方','甲府市',['tokyo','saitama','gunma','nagano','shizuoka','kanagawa']],['nagano','長野県','中部地方','長野市',['niigata','toyama','gifu','yamanashi','gunma','saitama','shizuoka','aichi']],['gifu','岐阜県','中部地方','岐阜市',['toyama','ishikawa','fukui','nagano','aichi','shiga','mie']],['shizuoka','静岡県','中部地方','静岡市',['kanagawa','yamanashi','nagano','aichi']],['aichi','愛知県','中部地方','名古屋市',['shizuoka','nagano','gifu','mie']],['mie','三重県','近畿地方','津市',['aichi','gifu','shiga','kyoto','nara','wakayama']],['shiga','滋賀県','近畿地方','大津市',['fukui','gifu','mie','kyoto','osaka','hyogo','nara']],['kyoto','京都府','近畿地方','京都市',['fukui','shiga','mie','osaka','hyogo','nara']],['osaka','大阪府','近畿地方','大阪市',['kyoto','shiga','hyogo','nara','wakayama']],['hyogo','兵庫県','近畿地方','神戸市',['kyoto','osaka','shiga','tottori','okayama']],['nara','奈良県','近畿地方','奈良市',['kyoto','osaka','mie','wakayama','shiga']],['wakayama','和歌山県','近畿地方','和歌山市',['osaka','nara','mie']],['tottori','鳥取県','中国地方','鳥取市',['hyogo','okayama','shimane']],['shimane','島根県','中国地方','松江市',['tottori','hiroshima','yamaguchi','okayama']],['okayama','岡山県','中国地方','岡山市',['hyogo','tottori','shimane','hiroshima']],['hiroshima','広島県','中国地方','広島市',['okayama','shimane','yamaguchi']],['yamaguchi','山口県','中国地方','山口市',['hiroshima','shimane','fukuoka','oita']],['tokushima','徳島県','四国地方','徳島市',['kagawa','ehime','kochi']],['kagawa','香川県','四国地方','高松市',['tokushima','ehime']],['ehime','愛媛県','四国地方','松山市',['kagawa','tokushima','kochi','oita']],['kochi','高知県','四国地方','高知市',['ehime','tokushima']],['fukuoka','福岡県','九州地方','福岡市',['saga','oita','kumamoto','yamaguchi']],['saga','佐賀県','九州地方','佐賀市',['fukuoka','nagasaki']],['nagasaki','長崎県','九州地方','長崎市',['saga','kumamoto']],['kumamoto','熊本県','九州地方','熊本市',['fukuoka','oita','miyazaki','kagoshima','nagasaki']],['oita','大分県','九州地方','大分市',['fukuoka','kumamoto','miyazaki','ehime','yamaguchi']],['miyazaki','宮崎県','九州地方','宮崎市',['oita','kumamoto','kagoshima']],['kagoshima','鹿児島県','九州地方','鹿児島市',['kumamoto','miyazaki','okinawa']],['okinawa','沖縄県','九州地方','那覇市',['kagoshima']]];
-const XY={hokkaido:[760,110],aomori:[650,190],iwate:[690,225],akita:[630,230],miyagi:[690,270],yamagata:[635,275],fukushima:[660,320],niigata:[580,315],toyama:[535,345],ishikawa:[500,350],fukui:[485,390],nagano:[585,365],gifu:[540,405],yamanashi:[625,380],shizuoka:[625,420],aichi:[575,430],mie:[540,465],shiga:[500,430],kyoto:[465,430],osaka:[455,455],hyogo:[415,435],nara:[500,458],wakayama:[490,495],tottori:[370,432],shimane:[320,440],okayama:[380,465],hiroshima:[335,475],yamaguchi:[280,492],tokushima:[430,510],kagawa:[405,495],ehime:[350,520],kochi:[390,548],fukuoka:[280,535],saga:[248,548],nagasaki:[210,565],kumamoto:[280,578],oita:[325,567],miyazaki:[325,605],kagoshima:[275,620],okinawa:[95,605],ibaraki:[705,337],tochigi:[680,340],gunma:[650,350],saitama:[675,370],chiba:[720,380],tokyo:[700,395],kanagawa:[688,420]};
-const state={prefs:[],screen:'title',selected:null,difficulty:'normal',turn:1,maxTurn:30,aiRate:.65,hintsLeft:3,correct:0,wrong:0,score:0,logs:[],quiz:null,canAnswer:true};
-const DIFF={easy:{ai:.45,maxTurn:25,hints:5,name:'かんたん'},normal:{ai:.65,maxTurn:30,hints:3,name:'ふつう'},hard:{ai:.8,maxTurn:35,hints:1,name:'むずかしい'}};const el=id=>document.getElementById(id);
-function init(){state.prefs=PREFS.map(p=>({id:p[0],name:p[1],region:p[2],capital:p[3],neighbors:p[4],owner:null}));}
-function setScreen(s){['title','base','game','quiz','result'].forEach(k=>el(k+'Screen').classList.toggle('active',k===s));state.screen=s}
-function pref(id){return state.prefs.find(p=>p.id===id)} function count(o){return state.prefs.filter(p=>p.owner===o).length}
-function attackables(owner){const set=new Set();state.prefs.filter(p=>p.owner===owner).forEach(p=>p.neighbors.forEach(n=>{const t=pref(n);if(t&&t.owner!==owner)set.add(n);}));return [...set]}
-function shapePoints(id){const [x,y]=XY[id];const w=id==='hokkaido'?65:id==='okinawa'?28:34;const h=id==='hokkaido'?42:id==='chiba'||id==='nagasaki'?30:25;return `${x-w},${y-h/2} ${x-w/4},${y-h} ${x+w/2},${y-h/2} ${x+w},${y+h/3} ${x-w/3},${y+h}`}
-function renderMap(svgId,mode){const svg=el(svgId);svg.innerHTML='';const at=mode==='game'?attackables('player'):[];state.prefs.forEach(p=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');poly.setAttribute('points',shapePoints(p.id));poly.setAttribute('class','pref-shape');poly.dataset.prefId=p.id;if(p.owner==='player')poly.classList.add('player');if(p.owner==='enemy')poly.classList.add('enemy');if(at.includes(p.id))poly.classList.add('attackable');if(state.selected===p.id)poly.classList.add('selected');poly.addEventListener('click',()=>selectPref(p.id,mode));const t=document.createElementNS('http://www.w3.org/2000/svg','text');const [x,y]=XY[p.id];t.setAttribute('x',x);t.setAttribute('y',y+3);t.setAttribute('text-anchor','middle');t.setAttribute('class','pref-label');t.textContent=p.name.replace('県','').replace('府','').replace('都','');g.append(poly,t);svg.append(g);});}
-function log(m){state.logs.unshift(`T${state.turn}: ${m}`);el('gameLog').innerHTML=state.logs.slice(0,80).map(v=>`<div>${v}</div>`).join('')}
-function selectPref(id,mode){state.selected=id;const p=pref(id);if(mode==='base'){el('baseConfirmBtn').disabled=false;el('baseMsg').textContent=`選択中: ${p.name}`;renderMap('baseMap','base');return;}const can=attackables('player').includes(id);el('attackBtn').disabled=!can;el('selectedInfo').innerHTML=`<b>${p.name}</b><br>地方: ${p.region}<br>県庁所在地: ${p.capital}<br>所有: ${p.owner||'未獲得'}<br>${can?'攻撃可能！':'今は攻撃できません'}`;renderMap('gameMap','game');}
-function renderStats(){const s=el('stats'),a=state.correct+state.wrong,acc=a?Math.round(state.correct/a*100):0;s.innerHTML=`<div class='stat'>難易度: ${DIFF[state.difficulty].name}</div><div class='stat'>ターン: ${state.turn}</div><div class='stat'>プレイヤー: ${count('player')}県</div><div class='stat'>敵AI: ${count('enemy')}県</div><div class='stat'>正解率: ${acc}%</div><div class='stat'>スコア: ${state.score}</div>`;el('nextStep').textContent=attackables('player').length?'黄色の県を攻めよう！':'攻め先なし。遠征しよう。';}
-function startQuiz(){const p=pref(state.selected);if(!p)return;const q=`${p.name}の県庁所在地は？`;const a=p.capital;const opts=[a,...state.prefs.filter(x=>x.id!==p.id).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.capital)].sort(()=>Math.random()-.5);state.quiz={a,p};el('quizQ').textContent=q;el('quizOptions').innerHTML=opts.map(o=>`<button class='btn' onclick='answerQuiz("${o}")'>${o}</button>`).join(' ');el('quizResult').textContent='';el('quizExp').textContent='';el('quizNextBtn').style.display='none';setScreen('quiz');}
-window.answerQuiz=(ans)=>{if(!state.quiz)return;const ok=ans===state.quiz.a;if(ok){state.correct++;state.score+=100;state.quiz.p.owner='player';el('quizResult').textContent='正解！県を獲得！';}else{state.wrong++;state.score-=20;el('quizResult').textContent=`不正解。正解は ${state.quiz.a}`;}el('quizExp').textContent=`${state.quiz.p.name} / ${state.quiz.p.region}`;el('quizNextBtn').style.display='inline-block';};
-function aiTurn(){const t=attackables('enemy');const pool=t.length?t:state.prefs.filter(p=>!p.owner).map(p=>p.id);if(!pool.length)return;const x=pref(pool[Math.floor(Math.random()*pool.length)]);if(Math.random()<state.aiRate)x.owner='enemy';}
-function nextTurn(){aiTurn();state.turn++;setScreen('game');state.selected=null;renderMap('gameMap','game');renderStats();if(state.turn>state.maxTurn||count('player')+count('enemy')===47||count('player')===0||count('enemy')===0)finish();}
-function finish(){setScreen('result');el('resultTitle').textContent=count('player')>=count('enemy')?'勝利！':'敗北';el('resultSummary').textContent=`${count('player')}県 対 ${count('enemy')}県`;el('finalStats').textContent=`スコア: ${state.score}`;}
-function setup(){init();el('startBtn').onclick=()=>{state.difficulty=el('difficultySelect').value;Object.assign(state, {turn:1,correct:0,wrong:0,score:0,logs:[],selected:null});state.maxTurn=DIFF[state.difficulty].maxTurn;state.aiRate=DIFF[state.difficulty].ai;renderMap('baseMap','base');setScreen('base');};el('baseConfirmBtn').onclick=()=>{const p=pref(state.selected);if(!p)return;p.owner='player';const enemy=state.prefs.filter(x=>x.id!==p.id)[Math.floor(Math.random()*(state.prefs.length-1))];enemy.owner='enemy';log(`本拠地 ${p.name} / 敵 ${enemy.name}`);setScreen('game');renderMap('gameMap','game');renderStats();};el('attackBtn').onclick=()=>{if(attackables('player').includes(state.selected))startQuiz();};el('expeditionBtn').onclick=()=>{const n=state.prefs.filter(p=>!p.owner);if(!n.length)return;state.selected=n[Math.floor(Math.random()*n.length)].id;startQuiz();};el('quizNextBtn').onclick=nextTurn;el('retryBtn').onclick=()=>location.reload();el('recordCard').innerHTML='デザイン再構築版';}
-setup();
+const CANDIDATE_MAP_FILES=[
+  'kanpeki-nihonchizu-wolf.svg','perfect-japan-map-wolf.svg','japan-map-wolf.svg','perfect-japan-map.svg','prefectures.svg','japan.svg'
+];
+const PREFS=[
+{name:'北海道',areaKm2:83424,population:5224614,density:63,capital:'札幌市',region:'北海道地方',specialties:['じゃがいも'],landmarks:['富良野']},
+{name:'青森県',areaKm2:9646,population:1203515,density:125,capital:'青森市',region:'東北地方',specialties:['りんご'],landmarks:['奥入瀬渓流']},
+{name:'岩手県',areaKm2:15275,population:1170000,density:77,capital:'盛岡市',region:'東北地方',specialties:['わんこそば'],landmarks:['平泉']},
+{name:'宮城県',areaKm2:7282,population:2270000,density:312,capital:'仙台市',region:'東北地方',specialties:['牛たん'],landmarks:['松島']},
+{name:'秋田県',areaKm2:11638,population:920000,density:79,capital:'秋田市',region:'東北地方',specialties:['きりたんぽ'],landmarks:['田沢湖']},
+{name:'山形県',areaKm2:9323,population:1030000,density:110,capital:'山形市',region:'東北地方',specialties:['さくらんぼ'],landmarks:['蔵王']},
+{name:'福島県',areaKm2:13784,population:1760000,density:128,capital:'福島市',region:'東北地方',specialties:['桃'],landmarks:['磐梯山']},
+{name:'東京都',areaKm2:2194,population:14100000,density:6400,capital:'新宿区',region:'関東地方',specialties:['もんじゃ'],landmarks:['東京タワー']},
+{name:'大阪府',areaKm2:1905,population:8770000,density:4600,capital:'大阪市',region:'近畿地方',specialties:['たこ焼き'],landmarks:['大阪城']},
+{name:'沖縄県',areaKm2:2282,population:1470000,density:644,capital:'那覇市',region:'九州地方',specialties:['ゴーヤー'],landmarks:['首里城']}
+];
+const THEMES=[
+{id:'areaDesc',label:'面積が大きい順',cmp:(a,b)=>b.areaKm2-a.areaKm2},
+{id:'areaAsc',label:'面積が小さい順',cmp:(a,b)=>a.areaKm2-b.areaKm2},
+{id:'popDesc',label:'人口が多い順',cmp:(a,b)=>b.population-a.population},
+{id:'popAsc',label:'人口が少ない順',cmp:(a,b)=>a.population-b.population},
+{id:'densDesc',label:'人口密度が高い順',cmp:(a,b)=>b.density-a.density},
+{id:'densAsc',label:'人口密度が低い順',cmp:(a,b)=>a.density-b.density}
+];
+async function findWolfMap(){
+  for(const f of CANDIDATE_MAP_FILES){
+    try{const r=await fetch(f,{method:'HEAD'});if(r.ok)return f;}catch{}
+  }
+  return null;
+}
+function renderMissingReport(){
+  const el=document.getElementById('missingReport');
+  el.classList.remove('hidden');
+  el.innerHTML=`<h2>「完璧な日本地図ウルフ」未検出</h2>
+  <ul>
+  <li>探したファイル名: ${CANDIDATE_MAP_FILES.join(', ')}</li>
+  <li>探した場所: 現在のWebルート（同一ディレクトリ）</li>
+  <li>見つからなかった理由: 実ファイルが存在しない/配信されていない</li>
+  <li>必要データ形式: 47都道府県が個別要素（id/name付き）になったSVG（path/polygon）</li>
+  <li>実装方法: SVG各都道府県要素にクリックイベントを付与し、ランキング正誤判定で色分けする</li>
+  </ul>`;
+}
+function bootGame(mapFile){
+  document.getElementById('gameRoot').classList.remove('hidden');
+  document.getElementById('mapContainer').innerHTML=`<object data="${mapFile}" type="image/svg+xml"></object>`;
+  const themeSel=document.getElementById('theme');
+  themeSel.innerHTML=THEMES.map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
+  let ranking=[],idx=0;
+  document.getElementById('start').onclick=()=>{
+    const t=THEMES.find(x=>x.id===themeSel.value);
+    ranking=[...PREFS].sort(t.cmp); idx=0;
+    document.getElementById('status').textContent=`お題: ${t.label} / 次は ${idx+1}位`;
+  };
+}
+(async()=>{const map=await findWolfMap(); if(!map){renderMissingReport(); return;} bootGame(map);})();
 </script>
 </body></html>
