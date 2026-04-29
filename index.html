@@ -3,172 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>都道府県陣取りバトル MVP</title>
+  <title>都道府県陣取りバトル MVP+</title>
   <style>
     :root {
-      --bg1: #a7e8ff;
-      --bg2: #fef7c3;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --neutral: #b9c0ca;
-      --player: #3b82f6;
-      --enemy: #ef4444;
-      --attack: #facc15;
-      --selected: #111827;
-      --ok: #16a34a;
-      --ng: #dc2626;
+      --bg1:#a7e8ff;--bg2:#fef7c3;--card:#fff;--text:#1f2937;--muted:#6b7280;
+      --neutral:#b9c0ca;--player:#3b82f6;--enemy:#ef4444;--attack:#facc15;
+      --selected:#111827;--ok:#16a34a;--ng:#dc2626;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-      color: var(--text);
-      background: linear-gradient(180deg, var(--bg1), var(--bg2));
-      min-height: 100vh;
-    }
-    .app { max-width: 1200px; margin: 0 auto; padding: 16px; }
-    .screen { display: none; animation: fadeIn .25s ease; }
-    .screen.active { display: block; }
-    @keyframes fadeIn { from {opacity: .2;} to {opacity: 1;} }
-    h1, h2, h3 { margin: 8px 0; }
-    .card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,.1);
-      margin-bottom: 14px;
-    }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; }
-    .btn {
-      border: none; border-radius: 12px; padding: 12px 16px; font-size: 16px;
-      font-weight: 700; cursor: pointer; min-height: 48px;
-    }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-main { background: #22c55e; color: #fff; }
-    .btn-sub { background: #e5e7eb; color: #111; }
-    .guide { font-size: 17px; font-weight: 700; color: #0f766e; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;color:var(--text);background:linear-gradient(180deg,var(--bg1),var(--bg2));min-height:100vh}
+    .app{max-width:1220px;margin:0 auto;padding:16px}
+    .screen{display:none;animation:fadeIn .25s ease}.screen.active{display:block}
+    @keyframes fadeIn{from{opacity:.2}to{opacity:1}}
+    .card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.1);margin-bottom:14px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .btn{border:none;border-radius:12px;padding:14px 18px;font-size:17px;font-weight:700;cursor:pointer;min-height:50px}
+    .btn:disabled{opacity:.45;cursor:not-allowed}.btn-main{background:#22c55e;color:#fff}.btn-sub{background:#e5e7eb;color:#111}.btn-aux{background:#fde68a;color:#111}
+    .guide{font-size:18px;font-weight:800;color:#0f766e;margin:6px 0}
+    .next-step{font-size:21px;font-weight:900;background:#ecfeff;border:3px solid #06b6d4;border-radius:12px;padding:10px 12px;margin-bottom:10px}
 
-    .legend { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; font-size:14px; }
-    .chip { padding:4px 8px; border-radius:999px; border:2px solid #111; font-weight:700; }
-    .chip.neutral { background: var(--neutral); }
-    .chip.player { background: var(--player); color: #fff; }
-    .chip.enemy { background: var(--enemy); color: #fff; }
-    .chip.attack { background: #fff7a8; border-color: var(--attack); }
-    .chip.selected { background: #fff; border-width:4px; }
+    .legend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:14px}.chip{padding:4px 8px;border-radius:999px;border:2px solid #111;font-weight:700}
+    .chip.neutral{background:var(--neutral)}.chip.player{background:var(--player);color:#fff}.chip.enemy{background:var(--enemy);color:#fff}
+    .chip.attack{background:#fff7a8;border-color:var(--attack)}.chip.selected{background:#fff;border-width:4px}
 
-    .map-grid {
-      display: grid;
-      grid-template-columns: repeat(12, minmax(52px, 1fr));
-      gap: 6px;
-      width: 100%;
-      overflow-x: auto;
-      padding-bottom: 8px;
-    }
-    .pref {
-      min-height: 46px; border-radius: 10px; border: 2px solid #475569; color: #111;
-      font-size: 13px; font-weight: 700; display:flex; align-items:center; justify-content:center;
-      text-align:center; padding:4px; cursor:pointer; position: relative;
-      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
-      background: var(--neutral);
-    }
-    .pref:hover { transform: translateY(-1px); }
-    .pref.player { background: var(--player); color: #fff; }
-    .pref.enemy { background: var(--enemy); color: #fff; }
-    .pref.attackable { box-shadow: 0 0 0 3px var(--attack) inset; }
-    .pref.selected { outline: 4px solid #fff; border-color: var(--selected); }
-    .pref.flash { animation: flash .5s ease 2; }
-    @keyframes flash { 0%{filter:brightness(1);} 50%{filter:brightness(1.6);} 100%{filter:brightness(1);} }
+    .map-wrap{overflow-x:auto;padding:8px;border:2px dashed #94a3b8;border-radius:12px;background:linear-gradient(145deg,#f8fafc,#eff6ff)}
+    .map-grid{display:grid;grid-template-columns:repeat(20,58px);grid-template-rows:repeat(18,56px);gap:7px;min-width:1220px;transform:rotate(-8deg);transform-origin:center center}
+    .pref{min-height:52px;min-width:54px;border-radius:10px;border:2px solid #475569;color:#111;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;padding:3px;cursor:pointer;position:relative;transition:transform .12s,box-shadow .12s,filter .12s;background:var(--neutral);line-height:1.15;white-space:pre-line}
+    .pref:hover{transform:translateY(-2px)}.pref.player{background:var(--player);color:#fff}.pref.enemy{background:var(--enemy);color:#fff}
+    .pref.attackable{box-shadow:0 0 0 3px var(--attack) inset,0 0 15px 2px rgba(250,204,21,.85);animation:glow 1.3s ease-in-out infinite}
+    @keyframes glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.15)}}
+    .pref.selected{outline:5px solid #000;border-color:#000}.pref.flash{animation:flash .6s ease 2}
+    @keyframes flash{0%{transform:scale(1)}50%{transform:scale(1.08);filter:brightness(1.6)}100%{transform:scale(1)}}
 
-    .stats { display:grid; grid-template-columns: repeat(3, minmax(130px, 1fr)); gap:8px; }
-    .stat { background:#f3f4f6; border-radius:10px; padding:8px; font-weight:700; text-align:center; }
-    .log { max-height: 220px; overflow:auto; background:#0b1220; color:#e5e7eb; padding:10px; border-radius:10px; font-size:14px; }
-    .log p { margin: 0 0 6px; }
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:8px}.stat{background:#f3f4f6;border-radius:10px;padding:8px;font-weight:700;text-align:center}
+    .log{max-height:230px;overflow:auto;background:#0b1220;color:#e5e7eb;padding:10px;border-radius:10px;font-size:14px}.log p{margin:0 0 6px}
 
-    .quiz-options { display:grid; gap:8px; }
-    .quiz-btn { background:#e0f2fe; border:2px solid #0ea5e9; }
-    .quiz-btn.correct { background:#bbf7d0; border-color: var(--ok); }
-    .quiz-btn.wrong { background:#fecaca; border-color: var(--ng); }
-    .shake { animation: shake .35s linear; }
-    @keyframes shake {
-      0%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}
-    }
+    .quiz-options{display:grid;gap:8px}.quiz-btn{background:#e0f2fe;border:2px solid #0ea5e9}.quiz-btn.correct{background:#bbf7d0;border-color:var(--ok)}.quiz-btn.wrong{background:#fecaca;border-color:var(--ng)}
+    .shake{animation:shake .35s linear}@keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}}
 
-    @media (max-width: 720px) {
-      .app { padding: 10px; }
-      .btn { font-size: 17px; }
-      .pref { min-height: 52px; font-size: 12px; }
-      .stats { grid-template-columns: repeat(2, 1fr); }
-    }
+    @media (max-width:720px){.app{padding:10px}.btn{font-size:18px}.stats{grid-template-columns:repeat(2,1fr)}.map-grid{grid-template-columns:repeat(20,56px)}}
   </style>
 </head>
 <body>
-  <div class="app">
-    <section id="titleScreen" class="screen active">
-      <div class="card">
-        <h1>🗾 都道府県陣取りバトル</h1>
-        <p>クイズに正解して都道府県をゲット！30ターンでより多くの県を獲得しよう。</p>
-        <p class="guide">まずは「はじめる」を押して、本拠地を選んでください。</p>
-        <div class="row">
-          <button id="startBtn" class="btn btn-main">はじめる</button>
-          <button id="howtoBtn" class="btn btn-sub">遊び方</button>
-        </div>
-      </div>
-      <div id="howtoCard" class="card" style="display:none;">
-        <h3>遊び方</h3><ol><li>本拠地を1つ選びます。</li><li>隣接県を攻めてクイズに挑戦！</li><li>正解で県を獲得、不正解なら失敗。</li><li>敵AIも毎ターン行動。</li><li>30ターン後の獲得県数で勝負！</li></ol>
-      </div>
-      <div id="recordCard" class="card"></div>
-    </section>
-
-    <section id="baseScreen" class="screen">
-      <div class="card"><h2>本拠地を選択</h2><p class="guide">都道府県を1つ選んで「決定」を押してください。</p><div class="legend"><span class="chip neutral">未獲得</span><span class="chip selected">選択中</span></div><div id="baseMap" class="map-grid"></div><div class="row"><button id="baseConfirmBtn" class="btn btn-main" disabled>決定</button><button id="backTitleBtn" class="btn btn-sub">タイトルへ戻る</button></div><p id="baseMsg"></p></div>
-    </section>
-
-    <section id="gameScreen" class="screen">
-      <div class="card"><h2>メインゲーム</h2><p id="actionGuide" class="guide"></p><div class="stats"><div class="stat" id="turnStat"></div><div class="stat" id="playerStat"></div><div class="stat" id="enemyStat"></div><div class="stat" id="remainStat"></div><div class="stat" id="accStat"></div></div><div class="legend"><span class="chip neutral">未獲得</span><span class="chip player">プレイヤー</span><span class="chip enemy">敵AI</span><span class="chip attack">攻撃可能</span><span class="chip selected">選択中</span></div><div id="gameMap" class="map-grid"></div><p id="selectedInfo">選択中: なし</p><div class="row"><button id="attackBtn" class="btn btn-main" disabled>この県を攻める</button></div></div>
-      <div class="card"><h3>ゲームログ</h3><div id="gameLog" class="log"></div></div>
-    </section>
-
-    <section id="quizScreen" class="screen">
-      <div id="quizCard" class="card"><h2>クイズバトル</h2><p id="quizQ"></p><div id="quizOptions" class="quiz-options"></div><p id="quizResult"></p><p id="quizExp"></p><button id="quizNextBtn" class="btn btn-main" style="display:none;">次へ</button></div>
-    </section>
-
-    <section id="resultScreen" class="screen">
-      <div class="card"><h2>結果発表</h2><h3 id="resultTitle"></h3><p id="resultSummary"></p><div id="finalStats"></div><div class="row"><button id="retryBtn" class="btn btn-main">もう一度遊ぶ</button></div></div>
-    </section>
-  </div>
+<div class="app">
+  <section id="titleScreen" class="screen active"><div class="card"><h1>🗾 都道府県陣取りバトル</h1><p>クイズで県を取ろう！敵AIより多く取ったら勝ちです。</p><p class="guide">ゲーム用航路: 北海道⇄青森 / 沖縄⇄鹿児島</p><div class="row"><button id="startBtn" class="btn btn-main">はじめる</button><button id="howtoBtn" class="btn btn-sub">遊び方</button></div></div><div id="howtoCard" class="card" style="display:none;"><h3>遊び方</h3><ol><li>本拠地を1つ選ぶ</li><li>光っている県を選んで攻める</li><li>クイズ正解で県を取れる</li><li>30ターンまたは決着で終了</li></ol></div><div id="recordCard" class="card"></div></section>
+  <section id="baseScreen" class="screen"><div class="card"><h2>本拠地を選択</h2><p class="guide">都道府県を1つ選んで「決定」を押してください。</p><div class="map-wrap"><div id="baseMap" class="map-grid"></div></div><div class="row"><button id="baseConfirmBtn" class="btn btn-main" disabled>決定</button><button id="backTitleBtn" class="btn btn-sub">タイトルへ戻る</button></div><p id="baseMsg"></p></div></section>
+  <section id="gameScreen" class="screen"><div class="card"><h2>メインゲーム</h2><p id="nextStep" class="next-step"></p><p id="actionGuide" class="guide"></p><div class="stats"><div class="stat" id="turnStat"></div><div class="stat" id="playerStat"></div><div class="stat" id="enemyStat"></div><div class="stat" id="remainStat"></div><div class="stat" id="accStat"></div><div class="stat" id="scoreStat"></div></div><div class="legend"><span class="chip neutral">未獲得</span><span class="chip player">プレイヤー</span><span class="chip enemy">敵AI</span><span class="chip attack">攻撃可能</span><span class="chip selected">選択中</span></div><div class="map-wrap"><div id="gameMap" class="map-grid"></div></div><p id="selectedInfo">選択中: なし</p><div class="row"><button id="attackBtn" class="btn btn-main" disabled>この県を攻める</button><button id="expeditionBtn" class="btn btn-aux" style="display:none;">遠征する</button></div></div><div class="card"><h3>ゲームログ</h3><div id="gameLog" class="log"></div></div></section>
+  <section id="quizScreen" class="screen"><div id="quizCard" class="card"><h2>クイズバトル</h2><p id="quizQ"></p><div id="quizOptions" class="quiz-options"></div><p id="quizResult"></p><p id="quizExp"></p><button id="quizNextBtn" class="btn btn-main" style="display:none;">次へ</button></div></section>
+  <section id="resultScreen" class="screen"><div class="card"><h2>結果発表</h2><h3 id="resultTitle"></h3><p id="resultSummary"></p><div id="finalStats"></div><div class="row"><button id="retryBtn" class="btn btn-main">もう一度遊ぶ</button></div></div></section>
+</div>
 <script>
-const PREFS=[
-["hokkaido","北海道","北海道地方","札幌市",[],["ジンギスカン","じゃがいも"],["札幌時計台","富良野"]],["aomori","青森県","東北地方","青森市",["akita","iwate"],["りんご","にんにく"],["弘前城","奥入瀬渓流"]],["iwate","岩手県","東北地方","盛岡市",["aomori","akita","miyagi"],["わんこそば","南部せんべい"],["中尊寺","龍泉洞"]],["miyagi","宮城県","東北地方","仙台市",["iwate","akita","yamagata","fukushima"],["牛たん","笹かまぼこ"],["松島","瑞鳳殿"]],["akita","秋田県","東北地方","秋田市",["aomori","iwate","miyagi","yamagata"],["きりたんぽ","いぶりがっこ"],["田沢湖","角館"]],["yamagata","山形県","東北地方","山形市",["akita","miyagi","fukushima","niigata"],["さくらんぼ","芋煮"],["蔵王","銀山温泉"]],["fukushima","福島県","東北地方","福島市",["miyagi","yamagata","niigata","tochigi","ibaraki","gunma"],["桃","喜多方ラーメン"],["大内宿","会津若松城"]],["ibaraki","茨城県","関東地方","水戸市",["fukushima","tochigi","saitama","chiba"],["納豆","メロン"],["偕楽園","袋田の滝"]],["tochigi","栃木県","関東地方","宇都宮市",["fukushima","ibaraki","gunma","saitama"],["いちご","餃子"],["日光東照宮","華厳の滝"]],["gunma","群馬県","関東地方","前橋市",["fukushima","tochigi","saitama","niigata","nagano"],["焼きまんじゅう","こんにゃく"],["草津温泉","尾瀬"]],["saitama","埼玉県","関東地方","さいたま市",["ibaraki","tochigi","gunma","tokyo","chiba","yamanashi"],["草加せんべい","川越いも"],["川越","長瀞"]],["chiba","千葉県","関東地方","千葉市",["ibaraki","saitama","tokyo"],["落花生","梨"],["東京ディズニーリゾート","犬吠埼"]],["tokyo","東京都","関東地方","新宿区",["saitama","chiba","kanagawa","yamanashi"],["もんじゃ焼き","深川めし"],["東京タワー","浅草寺"]],["kanagawa","神奈川県","関東地方","横浜市",["tokyo","yamanashi","shizuoka"],["しらす","小田原かまぼこ"],["横浜中華街","箱根温泉"]],["niigata","新潟県","中部地方","新潟市",["yamagata","fukushima","gunma","nagano","toyama"],["コシヒカリ","笹だんご"],["佐渡島","清津峡"]],["toyama","富山県","中部地方","富山市",["niigata","nagano","gifu","ishikawa"],["ます寿司","白えび"],["黒部ダム","立山"]],["ishikawa","石川県","中部地方","金沢市",["toyama","gifu","fukui"],["加賀野菜","のどぐろ"],["兼六園","千里浜"]],["fukui","福井県","中部地方","福井市",["ishikawa","gifu","shiga","kyoto"],["越前ガニ","羽二重餅"],["東尋坊","永平寺"]],["yamanashi","山梨県","中部地方","甲府市",["tokyo","saitama","gunma","nagano","shizuoka","kanagawa"],["ぶどう","ほうとう"],["富士山","河口湖"]],["nagano","長野県","中部地方","長野市",["niigata","toyama","gifu","yamanashi","gunma","saitama","shizuoka","aichi"],["そば","りんご"],["善光寺","上高地"]],["gifu","岐阜県","中部地方","岐阜市",["toyama","ishikawa","fukui","nagano","aichi","shiga","mie"],["飛騨牛","栗きんとん"],["白川郷","下呂温泉"]],["shizuoka","静岡県","中部地方","静岡市",["kanagawa","yamanashi","nagano","aichi"],["お茶","うなぎ"],["富士山","熱海温泉"]],["aichi","愛知県","中部地方","名古屋市",["shizuoka","nagano","gifu","mie"],["味噌カツ","ひつまぶし"],["名古屋城","犬山城"]],["mie","三重県","近畿地方","津市",["aichi","gifu","shiga","kyoto","nara","wakayama"],["松阪牛","伊勢うどん"],["伊勢神宮","熊野古道"]],["shiga","滋賀県","近畿地方","大津市",["fukui","gifu","mie","kyoto","osaka","hyogo","nara"],["近江牛","鮒ずし"],["琵琶湖","彦根城"]],["kyoto","京都府","近畿地方","京都市",["fukui","shiga","mie","osaka","hyogo","nara"],["抹茶","八つ橋"],["清水寺","金閣寺"]],["osaka","大阪府","近畿地方","大阪市",["kyoto","shiga","hyogo","nara","wakayama"],["たこ焼き","お好み焼き"],["大阪城","道頓堀"]],["hyogo","兵庫県","近畿地方","神戸市",["kyoto","osaka","shiga","tottori","okayama"],["明石焼き","神戸牛"],["姫路城","有馬温泉"]],["nara","奈良県","近畿地方","奈良市",["kyoto","osaka","mie","wakayama","shiga"],["柿の葉寿司","三輪そうめん"],["東大寺","奈良公園"]],["wakayama","和歌山県","近畿地方","和歌山市",["osaka","nara","mie"],["梅干し","みかん"],["高野山","那智の滝"]],["tottori","鳥取県","中国地方","鳥取市",["hyogo","okayama","shimane"],["らっきょう","松葉ガニ"],["鳥取砂丘","三朝温泉"]],["shimane","島根県","中国地方","松江市",["tottori","hiroshima","yamaguchi","okayama"],["しじみ","出雲そば"],["出雲大社","石見銀山"]],["okayama","岡山県","中国地方","岡山市",["hyogo","tottori","shimane","hiroshima"],["きびだんご","白桃"],["後楽園","倉敷美観地区"]],["hiroshima","広島県","中国地方","広島市",["okayama","shimane","yamaguchi"],["牡蠣","お好み焼き"],["宮島","平和記念公園"]],["yamaguchi","山口県","中国地方","山口市",["hiroshima","shimane","fukuoka","oita"],["ふぐ","瓦そば"],["角島大橋","秋吉台"]],["tokushima","徳島県","四国地方","徳島市",["kagawa","ehime","kochi"],["すだち","鳴門わかめ"],["鳴門の渦潮","祖谷渓"]],["kagawa","香川県","四国地方","高松市",["tokushima","ehime"],["うどん","オリーブ"],["栗林公園","直島"]],["ehime","愛媛県","四国地方","松山市",["kagawa","tokushima","kochi","oita"],["みかん","じゃこ天"],["道後温泉","しまなみ海道"]],["kochi","高知県","四国地方","高知市",["ehime","tokushima"],["かつおのたたき","ゆず"],["桂浜","四万十川"]],["fukuoka","福岡県","九州地方","福岡市",["saga","oita","kumamoto","yamaguchi"],["明太子","とんこつラーメン"],["太宰府天満宮","博多"]],["saga","佐賀県","九州地方","佐賀市",["fukuoka","nagasaki"],["佐賀牛","いか"],["吉野ヶ里遺跡","有田"]],["nagasaki","長崎県","九州地方","長崎市",["saga","kumamoto"],["カステラ","ちゃんぽん"],["ハウステンボス","軍艦島"]],["kumamoto","熊本県","九州地方","熊本市",["fukuoka","oita","miyazaki","kagoshima","nagasaki"],["馬刺し","からし蓮根"],["熊本城","阿蘇山"]],["oita","大分県","九州地方","大分市",["fukuoka","kumamoto","miyazaki","ehime","yamaguchi"],["とり天","しいたけ"],["別府温泉","湯布院"]],["miyazaki","宮崎県","九州地方","宮崎市",["oita","kumamoto","kagoshima"],["マンゴー","チキン南蛮"],["高千穂峡","青島"]],["kagoshima","鹿児島県","九州地方","鹿児島市",["kumamoto","miyazaki"],["黒豚","さつま揚げ"],["桜島","屋久島"]],["okinawa","沖縄県","九州地方","那覇市",[],["ゴーヤ","ちんすこう"],["首里城","美ら海水族館"]]
+const PREFS=[/* same data */
+["hokkaido","北海道","北海道地方","札幌市",["aomori"],["ジンギスカン","じゃがいも"],["札幌時計台","富良野"]],["aomori","青森県","東北地方","青森市",["akita","iwate","hokkaido"],["りんご","にんにく"],["弘前城","奥入瀬渓流"]],["iwate","岩手県","東北地方","盛岡市",["aomori","akita","miyagi"],["わんこそば","南部せんべい"],["中尊寺","龍泉洞"]],["miyagi","宮城県","東北地方","仙台市",["iwate","akita","yamagata","fukushima"],["牛たん","笹かまぼこ"],["松島","瑞鳳殿"]],["akita","秋田県","東北地方","秋田市",["aomori","iwate","miyagi","yamagata"],["きりたんぽ","いぶりがっこ"],["田沢湖","角館"]],["yamagata","山形県","東北地方","山形市",["akita","miyagi","fukushima","niigata"],["さくらんぼ","芋煮"],["蔵王","銀山温泉"]],["fukushima","福島県","東北地方","福島市",["miyagi","yamagata","niigata","tochigi","ibaraki","gunma"],["桃","喜多方ラーメン"],["大内宿","会津若松城"]],["ibaraki","茨城県","関東地方","水戸市",["fukushima","tochigi","saitama","chiba"],["納豆","メロン"],["偕楽園","袋田の滝"]],["tochigi","栃木県","関東地方","宇都宮市",["fukushima","ibaraki","gunma","saitama"],["いちご","餃子"],["日光東照宮","華厳の滝"]],["gunma","群馬県","関東地方","前橋市",["fukushima","tochigi","saitama","niigata","nagano"],["焼きまんじゅう","こんにゃく"],["草津温泉","尾瀬"]],["saitama","埼玉県","関東地方","さいたま市",["ibaraki","tochigi","gunma","tokyo","chiba","yamanashi"],["草加せんべい","川越いも"],["川越","長瀞"]],["chiba","千葉県","関東地方","千葉市",["ibaraki","saitama","tokyo"],["落花生","梨"],["東京ディズニーリゾート","犬吠埼"]],["tokyo","東京都","関東地方","新宿区",["saitama","chiba","kanagawa","yamanashi"],["もんじゃ焼き","深川めし"],["東京タワー","浅草寺"]],["kanagawa","神奈川県","関東地方","横浜市",["tokyo","yamanashi","shizuoka"],["しらす","小田原かまぼこ"],["横浜中華街","箱根温泉"]],["niigata","新潟県","中部地方","新潟市",["yamagata","fukushima","gunma","nagano","toyama"],["コシヒカリ","笹だんご"],["佐渡島","清津峡"]],["toyama","富山県","中部地方","富山市",["niigata","nagano","gifu","ishikawa"],["ます寿司","白えび"],["黒部ダム","立山"]],["ishikawa","石川県","中部地方","金沢市",["toyama","gifu","fukui"],["加賀野菜","のどぐろ"],["兼六園","千里浜"]],["fukui","福井県","中部地方","福井市",["ishikawa","gifu","shiga","kyoto"],["越前ガニ","羽二重餅"],["東尋坊","永平寺"]],["yamanashi","山梨県","中部地方","甲府市",["tokyo","saitama","gunma","nagano","shizuoka","kanagawa"],["ぶどう","ほうとう"],["富士山","河口湖"]],["nagano","長野県","中部地方","長野市",["niigata","toyama","gifu","yamanashi","gunma","saitama","shizuoka","aichi"],["そば","りんご"],["善光寺","上高地"]],["gifu","岐阜県","中部地方","岐阜市",["toyama","ishikawa","fukui","nagano","aichi","shiga","mie"],["飛騨牛","栗きんとん"],["白川郷","下呂温泉"]],["shizuoka","静岡県","中部地方","静岡市",["kanagawa","yamanashi","nagano","aichi"],["お茶","うなぎ"],["富士山","熱海温泉"]],["aichi","愛知県","中部地方","名古屋市",["shizuoka","nagano","gifu","mie"],["味噌カツ","ひつまぶし"],["名古屋城","犬山城"]],["mie","三重県","近畿地方","津市",["aichi","gifu","shiga","kyoto","nara","wakayama"],["松阪牛","伊勢うどん"],["伊勢神宮","熊野古道"]],["shiga","滋賀県","近畿地方","大津市",["fukui","gifu","mie","kyoto","osaka","hyogo","nara"],["近江牛","鮒ずし"],["琵琶湖","彦根城"]],["kyoto","京都府","近畿地方","京都市",["fukui","shiga","mie","osaka","hyogo","nara"],["抹茶","八つ橋"],["清水寺","金閣寺"]],["osaka","大阪府","近畿地方","大阪市",["kyoto","shiga","hyogo","nara","wakayama"],["たこ焼き","お好み焼き"],["大阪城","道頓堀"]],["hyogo","兵庫県","近畿地方","神戸市",["kyoto","osaka","shiga","tottori","okayama"],["明石焼き","神戸牛"],["姫路城","有馬温泉"]],["nara","奈良県","近畿地方","奈良市",["kyoto","osaka","mie","wakayama","shiga"],["柿の葉寿司","三輪そうめん"],["東大寺","奈良公園"]],["wakayama","和歌山県","近畿地方","和歌山市",["osaka","nara","mie"],["梅干し","みかん"],["高野山","那智の滝"]],["tottori","鳥取県","中国地方","鳥取市",["hyogo","okayama","shimane"],["らっきょう","松葉ガニ"],["鳥取砂丘","三朝温泉"]],["shimane","島根県","中国地方","松江市",["tottori","hiroshima","yamaguchi","okayama"],["しじみ","出雲そば"],["出雲大社","石見銀山"]],["okayama","岡山県","中国地方","岡山市",["hyogo","tottori","shimane","hiroshima"],["きびだんご","白桃"],["後楽園","倉敷美観地区"]],["hiroshima","広島県","中国地方","広島市",["okayama","shimane","yamaguchi"],["牡蠣","お好み焼き"],["宮島","平和記念公園"]],["yamaguchi","山口県","中国地方","山口市",["hiroshima","shimane","fukuoka","oita"],["ふぐ","瓦そば"],["角島大橋","秋吉台"]],["tokushima","徳島県","四国地方","徳島市",["kagawa","ehime","kochi"],["すだち","鳴門わかめ"],["鳴門の渦潮","祖谷渓"]],["kagawa","香川県","四国地方","高松市",["tokushima","ehime"],["うどん","オリーブ"],["栗林公園","直島"]],["ehime","愛媛県","四国地方","松山市",["kagawa","tokushima","kochi","oita"],["みかん","じゃこ天"],["道後温泉","しまなみ海道"]],["kochi","高知県","四国地方","高知市",["ehime","tokushima"],["かつおのたたき","ゆず"],["桂浜","四万十川"]],["fukuoka","福岡県","九州地方","福岡市",["saga","oita","kumamoto","yamaguchi"],["明太子","とんこつラーメン"],["太宰府天満宮","博多"]],["saga","佐賀県","九州地方","佐賀市",["fukuoka","nagasaki"],["佐賀牛","いか"],["吉野ヶ里遺跡","有田"]],["nagasaki","長崎県","九州地方","長崎市",["saga","kumamoto"],["カステラ","ちゃんぽん"],["ハウステンボス","軍艦島"]],["kumamoto","熊本県","九州地方","熊本市",["fukuoka","oita","miyazaki","kagoshima","nagasaki"],["馬刺し","からし蓮根"],["熊本城","阿蘇山"]],["oita","大分県","九州地方","大分市",["fukuoka","kumamoto","miyazaki","ehime","yamaguchi"],["とり天","しいたけ"],["別府温泉","湯布院"]],["miyazaki","宮崎県","九州地方","宮崎市",["oita","kumamoto","kagoshima"],["マンゴー","チキン南蛮"],["高千穂峡","青島"]],["kagoshima","鹿児島県","九州地方","鹿児島市",["kumamoto","miyazaki","okinawa"],["黒豚","さつま揚げ"],["桜島","屋久島"]],["okinawa","沖縄県","九州地方","那覇市",["kagoshima"],["ゴーヤ","ちんすこう"],["首里城","美ら海水族館"]]
 ];
-const POS={hokkaido:[9,1],aomori:[9,3],akita:[8,4],iwate:[10,4],yamagata:[8,5],miyagi:[10,5],fukushima:[9,6],niigata:[7,7],toyama:[6,8],ishikawa:[5,8],fukui:[4,9],nagano:[7,8],gifu:[6,9],yamanashi:[8,8],shizuoka:[8,9],aichi:[7,10],mie:[6,10],shiga:[5,10],kyoto:[4,10],osaka:[4,11],hyogo:[3,10],nara:[5,11],wakayama:[5,12],tottori:[2,10],shimane:[1,10],okayama:[2,11],hiroshima:[1,11],yamaguchi:[1,12],ibaraki:[10,7],tochigi:[9,7],gunma:[8,7],saitama:[9,8],chiba:[10,8],tokyo:[9,9],kanagawa:[9,10],tokushima:[3,12],kagawa:[2,12],ehime:[1,13],kochi:[2,13],fukuoka:[2,14],saga:[1,14],nagasaki:[0,14],kumamoto:[2,15],oita:[3,15],miyazaki:[3,16],kagoshima:[2,16],okinawa:[0,17]};
-const state={screen:"title",prefs:[],turn:1,maxTurn:30,selected:null,playerBase:null,enemyBase:null,quiz:null,canAnswer:true,correct:0,wrong:0,logs:[]};
+const POS={hokkaido:[16,1],aomori:[15,3],akita:[14,4],iwate:[16,4],yamagata:[14,5],miyagi:[16,5],fukushima:[15,6],niigata:[12,7],toyama:[11,8],ishikawa:[10,8],fukui:[9,9],nagano:[12,8],gifu:[11,9],yamanashi:[13,8],shizuoka:[13,9],aichi:[12,10],mie:[11,10],shiga:[10,10],kyoto:[9,10],osaka:[9,11],hyogo:[8,10],nara:[10,11],wakayama:[10,12],tottori:[7,10],shimane:[6,10],okayama:[7,11],hiroshima:[6,11],yamaguchi:[6,12],ibaraki:[16,7],tochigi:[15,7],gunma:[14,7],saitama:[15,8],chiba:[16,8],tokyo:[15,9],kanagawa:[15,10],tokushima:[8,12],kagawa:[7,12],ehime:[6,13],kochi:[7,13],fukuoka:[7,14],saga:[6,14],nagasaki:[5,14],kumamoto:[7,15],oita:[8,15],miyazaki:[8,16],kagoshima:[7,16],okinawa:[3,17]};
+const state={screen:"title",prefs:[],turn:1,maxTurn:30,selected:null,playerBase:null,enemyBase:null,quiz:null,canAnswer:true,correct:0,wrong:0,logs:[],score:0,conqueredRegions:new Set(),storageOk:true,pendingAttackType:"neutral",gameOverReason:""};
 const el=id=>document.getElementById(id);
 function initPrefs(){state.prefs=PREFS.map(p=>({id:p[0],name:p[1],region:p[2],capital:p[3],neighbors:p[4],specialties:p[5],landmarks:p[6],owner:null}));}
 function setScreen(s){["title","base","game","quiz","result"].forEach(k=>el(k+"Screen").classList.toggle("active",k===s));state.screen=s;}
-function getPref(id){return state.prefs.find(p=>p.id===id)||null;}
-function countOwner(owner){return state.prefs.filter(p=>p.owner===owner).length;}
-function neutralPrefs(){return state.prefs.filter(p=>!p.owner);}
-function playerAttackables(){const own=state.prefs.filter(p=>p.owner==="player");const set=new Set();own.forEach(p=>p.neighbors.forEach(n=>{const t=getPref(n); if(t && !t.owner) set.add(t.id);}));return [...set];}
-function log(msg){state.logs.unshift(`T${state.turn}: ${msg}`); el("gameLog").innerHTML=state.logs.slice(0,80).map(v=>`<p>${v}</p>`).join("");}
-function mapHtml(containerId,mode){const c=el(containerId); c.innerHTML=""; state.prefs.forEach(p=>{const b=document.createElement("button");b.className="pref";if(p.owner==="player")b.classList.add("player");if(p.owner==="enemy")b.classList.add("enemy");if(state.selected===p.id)b.classList.add("selected");if(mode==="game"&&playerAttackables().includes(p.id))b.classList.add("attackable");b.style.gridColumn=(POS[p.id]?.[0]||1)+"";b.style.gridRow=(POS[p.id]?.[1]||1)+"";b.textContent=p.name.replace("都","\n").replace("府","\n").replace("県","");b.title=p.name;b.onclick=()=>onSelectPref(p.id,mode);c.appendChild(b);});}
-function onSelectPref(id,mode){const p=getPref(id);if(!p)return;state.selected=id;if(mode==="base"){el("baseConfirmBtn").disabled=false;el("baseMsg").textContent=`選択中: ${p.name}`;mapHtml("baseMap","base");return;}if(state.screen!=="game")return;const attackables=playerAttackables();let note="";if(p.owner==="player")note="（自分の陣地）";else if(p.owner==="enemy")note="（敵陣地。MVPでは未獲得のみ攻撃可）";else if(!attackables.includes(p.id))note="（隣接していないため攻撃不可）";el("selectedInfo").textContent=`選択中: ${p.name} ${note}`;el("attackBtn").disabled=!(p && !p.owner && attackables.includes(p.id));mapHtml("gameMap","game");}
-function renderGame(){const total=countOwner("player")+countOwner("enemy");const answered=state.correct+state.wrong;const acc=answered?Math.round(state.correct/answered*100):0;el("turnStat").textContent=`ターン: ${state.turn}`;el("playerStat").textContent=`プレイヤー: ${countOwner("player")}県`;el("enemyStat").textContent=`敵AI: ${countOwner("enemy")}県`;el("remainStat").textContent=`残りターン: ${Math.max(0,state.maxTurn-state.turn+1)}`;el("accStat").textContent=`正解率: ${acc}%`;el("actionGuide").textContent="自分の陣地に隣接した未獲得県を選んで攻めよう！";mapHtml("gameMap","game");el("selectedInfo").textContent="選択中: なし";el("attackBtn").disabled=true;if(total===47||state.turn>state.maxTurn)finishGame();}
-function buildQuiz(pref){const cats=["capital","region","specialty","landmark","neighbor"];const type=cats[Math.floor(Math.random()*cats.length)];let q="",a="",pool=[];if(type==="capital"){q=`${pref.name}の県庁所在地はどこ？`;a=pref.capital;pool=state.prefs.map(p=>p.capital);}else if(type==="region"){q=`${pref.name}が属する地方は？`;a=pref.region;pool=[...new Set(state.prefs.map(p=>p.region))];}else if(type==="specialty"){q=`${pref.name}の名産品として正しいものは？`;a=pref.specialties[0];pool=state.prefs.flatMap(p=>p.specialties);}else if(type==="landmark"){q=`${pref.name}の観光地として正しいものは？`;a=pref.landmarks[0];pool=state.prefs.flatMap(p=>p.landmarks);}else{q=`${pref.name}に隣接している都道府県はどれ？`;const n=pref.neighbors[0]||"";a=(getPref(n)?.name)||"隣接県なし";pool=state.prefs.map(p=>p.name);}pool=[...new Set(pool.filter(x=>x&&x!==a))];while(pool.length<3)pool.push("ダミー選択肢"+Math.random().toString(36).slice(2,5));const wrong=pool.sort(()=>Math.random()-.5).slice(0,3);const opts=[a,...wrong].sort(()=>Math.random()-.5);return {q,a,opts,exp:`正解は「${a}」。${pref.name}の基本情報を覚えよう！`};}
+function getPref(id){return state.prefs.find(p=>p.id===id)||null;} function countOwner(owner){return state.prefs.filter(p=>p.owner===owner).length;} function neutralPrefs(){return state.prefs.filter(p=>!p.owner);}
+function attackablesFor(owner){const own=state.prefs.filter(p=>p.owner===owner);const set=new Set();own.forEach(p=>p.neighbors.forEach(n=>{const t=getPref(n);if(t&&t.owner!==owner)set.add(t.id);}));return [...set];}
+function playerAttackables(){return attackablesFor("player");}
+function log(msg){state.logs.unshift(`T${state.turn}: ${msg}`);el("gameLog").innerHTML=state.logs.slice(0,100).map(v=>`<p>${v}</p>`).join("");}
+function prefShortName(name){return name.replace("都","").replace("府","").replace("県","").replace("北海道","北海道");}
+function mapHtml(containerId,mode){const c=el(containerId);c.innerHTML="";const at=mode==="game"?playerAttackables():[];state.prefs.forEach(p=>{const b=document.createElement("button");b.className="pref";if(p.owner==="player")b.classList.add("player");if(p.owner==="enemy")b.classList.add("enemy");if(state.selected===p.id)b.classList.add("selected");if(mode==="game"&&at.includes(p.id))b.classList.add("attackable");b.style.gridColumn=(POS[p.id]?.[0]||1)+"";b.style.gridRow=(POS[p.id]?.[1]||1)+"";b.textContent=prefShortName(p.name);b.title=p.name;b.onclick=()=>onSelectPref(p.id,mode);c.appendChild(b);});}
+function reasonCannotAttack(p){if(!p)return"県を選んでください";if(state.screen!=="game")return"";const at=playerAttackables();if(at.includes(p.id))return"攻撃可能";if(p.owner==="player")return"自分の県です";if(!state.prefs.some(x=>x.owner==="player"))return"プレイヤーの県がありません";return"自分の県に接していません";}
+function onSelectPref(id,mode){const p=getPref(id);if(!p)return;state.selected=id;if(mode==="base"){el("baseConfirmBtn").disabled=false;el("baseMsg").textContent=`選択中: ${p.name}`;mapHtml("baseMap","base");return;}if(state.screen!=="game")return;const neighbors=p.neighbors.map(n=>getPref(n)?.name).filter(Boolean);const reason=reasonCannotAttack(p);el("selectedInfo").innerHTML=`選択中: ${p.name}<br>地方: ${p.region}<br>県庁所在地: ${p.capital}<br>所有者: ${p.owner==="player"?"プレイヤー":p.owner==="enemy"?"敵AI":"未獲得"}<br>隣接: ${neighbors.join("、")||"なし"}<br>状態: ${reason}`;const can=reason==="攻撃可能";el("attackBtn").disabled=!can; if(!can)log(`${p.name}は攻められません（${reason}）`); mapHtml("gameMap","game");}
+function checkRegionBonus(){const regions=[...new Set(state.prefs.map(p=>p.region))];regions.forEach(r=>{if(state.conqueredRegions.has(r))return;const list=state.prefs.filter(p=>p.region===r);if(list.length&&list.every(p=>p.owner==="player")){state.conqueredRegions.add(r);state.score+=500;log(`🎉 ${r}を制覇！ +500点`);}});}
+function updateGuide(){const at=playerAttackables();el("actionGuide").textContent="攻められる県を選んでください。黄色に光る県が目印です。";el("nextStep").textContent=at.length?"次: 光っている県をえらんで「この県を攻める」":"次: 攻め先がないので「遠征する」で未獲得県へ行こう";el("expeditionBtn").style.display=at.length?"none":"inline-block";}
+function renderGame(){const total=countOwner("player")+countOwner("enemy"),answered=state.correct+state.wrong,acc=answered?Math.round(state.correct/answered*100):0;el("turnStat").textContent=`ターン: ${state.turn}`;el("playerStat").textContent=`プレイヤー: ${countOwner("player")}県`;el("enemyStat").textContent=`敵AI: ${countOwner("enemy")}県`;el("remainStat").textContent=`残りターン: ${Math.max(0,state.maxTurn-state.turn+1)}`;el("accStat").textContent=`正解率: ${acc}%`;el("scoreStat").textContent=`スコア: ${state.score}`;mapHtml("gameMap","game");el("selectedInfo").textContent="選択中: なし";el("attackBtn").disabled=true;updateGuide();const reason=getFinishReason();if(reason){state.gameOverReason=reason;finishGame();}}
+function getFinishReason(){if(state.turn>state.maxTurn)return"30ターン終了";if(countOwner("player")===0)return"プレイヤー陣地がなくなりました";if(countOwner("enemy")===0)return"敵AIを全滅させました";if(countOwner("player")+countOwner("enemy")===47)return"全国が埋まりました";return"";}
+function buildQuiz(pref){const cats=["capital","region","specialty","landmark","neighbor"];const type=cats[Math.floor(Math.random()*cats.length)];let q="",a="",pool=[];if(type==="capital"){q=`${pref.name}の県庁所在地はどこ？`;a=pref.capital;pool=state.prefs.map(p=>p.capital);}else if(type==="region"){q=`${pref.name}が属する地方は？`;a=pref.region;pool=[...new Set(state.prefs.map(p=>p.region))];}else if(type==="specialty"){q=`${pref.name}の名産品はどれ？`;a=pref.specialties[0];pool=state.prefs.flatMap(p=>p.specialties);}else if(type==="landmark"){q=`${pref.name}の観光地はどれ？`;a=pref.landmarks[0];pool=state.prefs.flatMap(p=>p.landmarks);}else{q=`${pref.name}に隣接している都道府県はどれ？`;a=getPref(pref.neighbors[0])?.name||"隣接県なし";pool=state.prefs.map(p=>p.name);}pool=[...new Set(pool.filter(x=>x&&x!==a))];const wrong=pool.sort(()=>Math.random()-.5).slice(0,3);const opts=[a,...wrong].sort(()=>Math.random()-.5);return {q,a,opts,exp:`正解は「${a}」。${pref.name}のポイントを覚えよう！`};}
 function startQuiz(){const p=getPref(state.selected);if(!p)return;state.quiz=buildQuiz(p);state.canAnswer=true;el("quizQ").textContent=state.quiz.q;el("quizResult").textContent="";el("quizExp").textContent="";el("quizNextBtn").style.display="none";const box=el("quizOptions");box.innerHTML="";state.quiz.opts.forEach(opt=>{const b=document.createElement("button");b.className="btn quiz-btn";b.textContent=opt;b.onclick=()=>answerQuiz(opt,b);box.appendChild(b);});setScreen("quiz");}
-function answerQuiz(ans,btn){if(!state.canAnswer)return;state.canAnswer=false;const target=getPref(state.selected);const buttons=[...el("quizOptions").querySelectorAll("button")];buttons.forEach(b=>b.disabled=true);const ok=ans===state.quiz.a;if(ok){state.correct++;target.owner="player";btn.classList.add("correct");el("quizResult").textContent="✅ 正解！県を獲得しました！";log(`プレイヤーが${target.name}を獲得！`);}else{state.wrong++;btn.classList.add("wrong");el("quizCard").classList.add("shake");setTimeout(()=>el("quizCard").classList.remove("shake"),380);el("quizResult").textContent="❌ 不正解…獲得失敗。";log(`プレイヤーの${target.name}攻撃は失敗。`);}el("quizExp").textContent=state.quiz.exp;el("quizNextBtn").style.display="inline-block";}
-function aiTurn(){const ai=state.prefs.filter(p=>p.owner==="enemy");let targets=[];ai.forEach(p=>p.neighbors.forEach(n=>{const t=getPref(n);if(t&&!t.owner)targets.push(t.id);}));targets=[...new Set(targets)];if(!targets.length)targets=neutralPrefs().map(p=>p.id);if(!targets.length)return;const tid=targets[Math.floor(Math.random()*targets.length)];const t=getPref(tid);const success=Math.random()<0.7;if(success&&t){t.owner="enemy";log(`敵AIが${t.name}の獲得に成功。`);}else{log(`敵AIが${t?.name||"どこか"}の攻撃に失敗。`);} }
-function nextTurn(){aiTurn();state.turn++;state.selected=null;saveStats(false);setScreen("game");renderGame();}
-function finishGame(){setScreen("result");const p=countOwner("player"),e=countOwner("enemy");const ans=state.correct+state.wrong;const acc=ans?Math.round(state.correct/ans*100):0;let winner="引き分け";if(p>e)winner="プレイヤーの勝ち！";else if(e>p)winner="敵AIの勝ち";else{const aiAcc=70;if(acc>aiAcc)winner="プレイヤーの勝ち！（正解率判定）";else if(acc<aiAcc)winner="敵AIの勝ち（正解率判定）";}el("resultTitle").textContent=winner;el("resultSummary").textContent=`30ターン終了または全県確保でゲーム終了。`;el("finalStats").innerHTML=`<p>プレイヤー獲得: ${p}県</p><p>敵AI獲得: ${e}県</p><p>正解: ${state.correct} / 不正解: ${state.wrong}</p><p>正解率: ${acc}%</p>`;saveStats(true,winner.includes("プレイヤー"),p);}
+function answerQuiz(ans,btn){if(!state.canAnswer)return;state.canAnswer=false;const target=getPref(state.selected),buttons=[...el("quizOptions").querySelectorAll("button")];buttons.forEach(b=>b.disabled=true);const ok=ans===state.quiz.a;if(ok){state.correct++;state.score+=50;const wasEnemy=target.owner==="enemy";target.owner="player";state.score+=wasEnemy?150:100;btn.classList.add("correct");el("quizResult").textContent=`✅ 正解！${target.name}をゲット！`;log(`プレイヤーが${target.name}を獲得！ +${wasEnemy?200:150}点`);checkRegionBonus();setTimeout(()=>{mapHtml("gameMap","game");},0);}else{state.wrong++;state.score-=20;btn.classList.add("wrong");el("quizCard").classList.add("shake");setTimeout(()=>el("quizCard").classList.remove("shake"),380);el("quizResult").textContent=`❌ ざんねん！正解は${state.quiz.a}でした`;log(`プレイヤーの${target.name}攻撃は失敗。 -20点`);}el("quizExp").textContent=state.quiz.exp;el("quizNextBtn").style.display="inline-block";}
+function aiTurn(){const targets=attackablesFor("enemy");let pool=targets.length?targets:neutralPrefs().map(p=>p.id);if(!pool.length)return;const t=getPref(pool[Math.floor(Math.random()*pool.length)]);if(!t)return;const success=Math.random()<0.65;if(success){const prev=t.owner;t.owner="enemy";if(prev==="player")log(`敵AIが${t.name}をうばいました！`);else log(`敵AIが${t.name}を獲得。`);}else log(`敵AIの${t.name}攻撃は失敗。`);}
+function nextTurn(){aiTurn();state.turn++;state.selected=null;setScreen("game");renderGame();}
+function finishGame(){setScreen("result");const p=countOwner("player"),e=countOwner("enemy"),ans=state.correct+state.wrong,acc=ans?Math.round(state.correct/ans*100):0;const winner=p===e?"引き分け":p>e?"プレイヤーの勝ち！":"敵AIの勝ち";el("resultTitle").textContent=winner;el("resultSummary").textContent=`終了理由: ${state.gameOverReason}`;el("finalStats").innerHTML=`<p>プレイヤー獲得: ${p}県</p><p>敵AI獲得: ${e}県</p><p>正解率: ${acc}%</p><p>最終スコア: ${state.score}</p>`;saveStats(true,p,acc);}
 function storage(){try{return window.localStorage;}catch{return null;}}
-function loadRecord(){const s=storage();const d=s?JSON.parse(s.getItem("jintoriRecord")||"{}"):{},w=d.bestWinRate||0,m=d.bestPref||0,c=d.completeCount||0;el("recordCard").innerHTML=`<h3>記録</h3><p>最高正解率: ${w}%</p><p>最高獲得県数: ${m}県</p><p>全国制覇回数: ${c}回</p>`;}
-function saveStats(isEnd,playerWin=false,prefCount=0){if(!isEnd)return;const s=storage();if(!s)return;const d=JSON.parse(s.getItem("jintoriRecord")||"{}");const ans=state.correct+state.wrong;const acc=ans?Math.round(state.correct/ans*100):0;d.bestWinRate=Math.max(d.bestWinRate||0,acc);d.bestPref=Math.max(d.bestPref||0,prefCount);if(prefCount===47&&playerWin)d.completeCount=(d.completeCount||0)+1;s.setItem("jintoriRecord",JSON.stringify(d));}
-function setup(){initPrefs();loadRecord();
-el("howtoBtn").onclick=()=>{const c=el("howtoCard");c.style.display=c.style.display==="none"?"block":"none"};
+function safeLoadRecord(){const init={bestScore:0,bestPref:0,bestAcc:0,completeCount:0};const s=storage();if(!s){state.storageOk=false;return init;}try{const raw=s.getItem("jintoriRecord");if(!raw)return init;const d=JSON.parse(raw);return {...init,...(typeof d==="object"&&d?d:{})};}catch{return init;}}
+function safeSaveRecord(data){const s=storage();if(!s){state.storageOk=false;return;}try{s.setItem("jintoriRecord",JSON.stringify(data));}catch{state.storageOk=false;}}
+function loadRecord(){const d=safeLoadRecord();el("recordCard").innerHTML=`<h3>記録</h3><p>最高スコア: ${d.bestScore}点</p><p>最高獲得県数: ${d.bestPref}県</p><p>最高正解率: ${d.bestAcc}%</p><p>全国制覇回数: ${d.completeCount}回</p>${state.storageOk?"":"<p>記録保存が使えない環境です</p>"}`;}
+function saveStats(isEnd,prefCount=0,acc=0){if(!isEnd)return;const d=safeLoadRecord();d.bestScore=Math.max(d.bestScore||0,state.score);d.bestPref=Math.max(d.bestPref||0,prefCount);d.bestAcc=Math.max(d.bestAcc||0,acc);if(prefCount===47)d.completeCount=(d.completeCount||0)+1;safeSaveRecord(d);}
+function setup(){initPrefs();state.turn=1;state.correct=0;state.wrong=0;state.score=0;state.logs=[];state.selected=null;state.conqueredRegions=new Set();state.gameOverReason="";state.storageOk=true;loadRecord();
+el("howtoBtn").onclick=()=>{const c=el("howtoCard");c.style.display=c.style.display==="none"?"block":"none";};
 el("startBtn").onclick=()=>{state.selected=null;mapHtml("baseMap","base");el("baseConfirmBtn").disabled=true;el("baseMsg").textContent="";setScreen("base");};
 el("backTitleBtn").onclick=()=>setScreen("title");
-el("baseConfirmBtn").onclick=()=>{const p=getPref(state.selected);if(!p){el("baseMsg").textContent="都道府県を選んでください。";return;}p.owner="player";state.playerBase=p.id;const pool=state.prefs.filter(x=>x.id!==p.id);const enemy=pool[Math.floor(Math.random()*pool.length)];enemy.owner="enemy";state.enemyBase=enemy.id;state.turn=1;state.correct=0;state.wrong=0;state.logs=[];log(`プレイヤー本拠地: ${p.name}`);log(`敵AI本拠地: ${enemy.name}`);setScreen("game");renderGame();};
-el("attackBtn").onclick=()=>{if(state.turn>state.maxTurn){log("ゲーム終了後は攻撃できません。");return;}const p=getPref(state.selected);if(!p){log("攻める県を選んでください。");return;}if(p.owner){log("その県はすでに獲得済みです。");return;}if(!playerAttackables().includes(p.id)){log("その県は隣接していないため攻撃できません。");return;}startQuiz();};
+el("baseConfirmBtn").onclick=()=>{const p=getPref(state.selected);if(!p){el("baseMsg").textContent="都道府県を選んでください。";return;}p.owner="player";state.playerBase=p.id;const pool=state.prefs.filter(x=>x.id!==p.id);const enemy=pool[Math.floor(Math.random()*pool.length)];enemy.owner="enemy";state.enemyBase=enemy.id;log(`プレイヤー本拠地: ${p.name}`);log(`敵AI本拠地: ${enemy.name}`);setScreen("game");renderGame();};
+el("attackBtn").onclick=()=>{const p=getPref(state.selected);if(!p){log("攻める県を選んでください。");return;}if(reasonCannotAttack(p)!=="攻撃可能"){log(`その県は攻められません（${reasonCannotAttack(p)}）`);return;}startQuiz();};
+el("expeditionBtn").onclick=()=>{const n=neutralPrefs();if(!n.length){log("遠征先がありません。");return;}const t=n[Math.floor(Math.random()*n.length)];state.selected=t.id;log(`遠征！ ${t.name}を選びました。`);startQuiz();};
 el("quizNextBtn").onclick=()=>nextTurn();
 el("retryBtn").onclick=()=>{setup();setScreen("title");};}
 setup();
