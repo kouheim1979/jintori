@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 
-const source = process.argv[2];
+const DEFAULT_SOURCE = 'https://raw.githubusercontent.com/geolonia/japanese-prefectures/90c5b4b8260de058d3db61b3cb8bfb6f67a81f9a/map-full.svg';
+const source = process.argv[2] || DEFAULT_SOURCE;
+
 if (!source) {
-  console.error('Usage: node tools/import-geolonia-map.mjs <svg-url-or-path>');
+  console.error('SVG source is required.');
   process.exit(1);
 }
 
