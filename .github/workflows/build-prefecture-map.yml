@@ -12,6 +12,11 @@ on:
       - main
     paths:
       - ".github/workflows/build-prefecture-map.yml"
+  workflow_run:
+    workflows:
+      - "pages build and deployment"
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -22,12 +27,17 @@ concurrency:
 
 jobs:
   build:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.head_commit.message == 'ci: launch N03 map build'
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
