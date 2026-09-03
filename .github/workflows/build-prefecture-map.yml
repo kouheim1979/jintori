@@ -1,0 +1,64 @@
+name: Build Japan Prefecture SVG
+
+on:
+  workflow_dispatch:
+    inputs:
+      simplify:
+        description: "Simplify ratio (example: 6%)"
+        required: true
+        default: "6%"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-prefecture-map
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build SVG
+        env:
+          N03_YEAR: "2026"
+          N03_DATE: "20260101"
+          SIMPLIFY: ${{ inputs.simplify }}
+          MAPSHAPER_VERSION: "0.7.56"
+        run: bash tools/build-map-iphone.sh
+
+      - name: Validate generated SVG
+        run: |
+          test -s public/map-full.svg
+          test "$(grep -o 'class="[^"]*prefecture"' public/map-full.svg | wc -l)" -eq 47
+          grep -q 'data-code="01"' public/map-full.svg
+          grep -q 'data-code="47"' public/map-full.svg
+
+      - name: Upload SVG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-full-svg
+          path: public/map-full.svg
+          if-no-files-found: error
+
+      - name: Commit generated SVG
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/map-full.svg
+          if git diff --cached --quiet; then
+            echo "No SVG changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: rebuild prefecture SVG from N03"
+          git push
