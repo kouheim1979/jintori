@@ -7,6 +7,11 @@ on:
         description: "Simplify ratio (example: 6%)"
         required: true
         default: "6%"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-prefecture-map.yml"
 
 permissions:
   contents: write
