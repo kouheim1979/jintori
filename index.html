@@ -12,7 +12,7 @@
     :root{
       --c-hero:#ff3366;--c-sun:#ffc93c;--c-deep:#3b5bdb;--c-ink:#1f0a3d;
       --c-ink-soft:#6b6483;--c-cream:#fff9f2;--c-paper:#fff;--c-line:#1f0a3d;
-      --c-map:#eaf4ff;--sh-1:3px 3px 0 var(--c-line);--sh-2:5px 5px 0 var(--c-line);
+      --c-map:#eaf4ff;--c-near:#66d08a;--sh-1:3px 3px 0 var(--c-line);--sh-2:5px 5px 0 var(--c-line);
       --r-md:14px;--r-lg:20px;
     }
     *{box-sizing:border-box}
@@ -41,11 +41,13 @@
     #mapMount{width:100%;min-height:320px;display:grid;place-items:center}
     #japanMap{display:block;width:100%;height:auto;max-height:72vh;background:var(--c-map);touch-action:manipulation}
     #japanMap .pref-shape{cursor:pointer;outline:none}
-    #japanMap .pref-shape path{fill:var(--c-paper)!important;stroke:var(--c-line)!important;stroke-width:1!important;vector-effect:non-scaling-stroke;transition:fill .12s ease}
+    #japanMap .pref-shape path{fill:var(--c-paper)!important;stroke:var(--c-line)!important;stroke-width:1!important;vector-effect:non-scaling-stroke;transition:fill .12s ease,opacity .12s ease}
     #japanMap .pref-shape:hover path,#japanMap .pref-shape:focus path{fill:#ffe9a2!important}
     #japanMap .pref-shape.player path{fill:var(--c-sun)!important}
     #japanMap .pref-shape.enemy path{fill:var(--c-hero)!important}
     #japanMap .pref-shape.answer path{fill:var(--c-deep)!important}
+    #japanMap .pref-shape.near path{fill:var(--c-near)!important}
+    #japanMap .pref-shape.completed{cursor:default}
     .map-status{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:rgba(234,244,255,.92);font-weight:900;z-index:2}
     .map-status small{display:block;margin-top:8px;color:var(--c-ink-soft);font-weight:700}
     .source{font-size:11px;color:var(--c-ink-soft);line-height:1.55}
@@ -79,7 +81,7 @@
     </section>
 
     <section id="game" class="hidden">
-      <div class="card hint-mini">地図から、今のお題でその順位だと思う都道府県をタップ！</div>
+      <div class="card hint-mini">地図から、今のお題でその順位だと思う都道府県をタップ！ 不正解で選んだ県は次の問題以降も選べます。</div>
       <div class="row">
         <section class="card">
           <h2 id="next"></h2>
@@ -174,11 +176,13 @@ const THEMES=[
   {id:'densAsc',label:'人口密度が低い順',key:'density',cmp:(a,b)=>a.density-b.density}
 ];
 const MODE_LABEL={challenge10:'チャレンジ10',all:'全国制覇',kids:'キッズモード',gachi:'ガチモード'};
+const FEEDBACK_DELAY_MS=700;
 
 const $=id=>document.getElementById(id);
 const theme=$('theme'),mode=$('mode'),startBtn=$('startBtn'),best=$('best'),title=$('title'),game=$('game'),next=$('next'),score=$('score'),combo=$('combo'),stats=$('stats'),hintBtn=$('hintBtn'),hintText=$('hintText'),explain=$('explain'),result=$('result'),warning=$('warning'),mapMount=$('mapMount'),mapStatus=$('mapStatus');
 let state={};
 let mapReady=false;
+let advanceTimer=null;
 
 function safeGet(k,d='0'){try{return localStorage.getItem(k)||d}catch{return d}}
 function safeSet(k,v){try{localStorage.setItem(k,v)}catch{}}
@@ -190,7 +194,7 @@ async function loadMap(){
   mapStatus.classList.remove('hidden');
   warning.classList.add('hidden');
   try{
-    const response=await fetch('./public/map-full.svg?v=20260903-n03-1',{cache:'no-cache'});
+    const response=await fetch('./public/map-full.svg?v=20260903-n03-2',{cache:'no-cache'});
     if(!response.ok)throw new Error(`地図ファイルを取得できませんでした (${response.status})`);
     const text=await response.text();
     const xml=new DOMParser().parseFromString(text,'image/svg+xml');
@@ -217,7 +221,8 @@ async function loadMap(){
 
     const imported=document.importNode(sourceSvg,true);
     mapMount.replaceChildren(imported);
-    drawMap();
+    bindMapEvents();
+    resetMapVisuals();
     validateMap();
     mapReady=true;
     mapStatus.classList.add('hidden');
@@ -242,19 +247,43 @@ function validateMap(){
   if(PREFS.some(p=>!ids.has(p.id)))throw new Error('ゲームデータと地図の都道府県IDが一致しません');
 }
 
-function drawMap(){
+function bindMapEvents(){
   const svg=$('japanMap');
   if(!svg)return;
   svg.querySelectorAll('.pref-shape').forEach(pref=>{
-    pref.classList.remove('player','enemy','answer');
     pref.onclick=event=>{
       const el=event.currentTarget;
       if(el.dataset.prefId)answer(el.dataset.prefId);
     };
     pref.onkeydown=event=>{
-      if(event.key==='Enter'||event.key===' '){event.preventDefault();const el=event.currentTarget;if(el.dataset.prefId)answer(el.dataset.prefId)}
+      if(event.key==='Enter'||event.key===' '){
+        event.preventDefault();
+        const el=event.currentTarget;
+        if(el.dataset.prefId)answer(el.dataset.prefId);
+      }
     };
   });
+}
+
+function resetMapVisuals(){
+  const svg=$('japanMap');
+  if(!svg)return;
+  svg.querySelectorAll('.pref-shape').forEach(pref=>{
+    pref.classList.remove('player','enemy','answer','near','completed');
+    pref.setAttribute('aria-disabled','false');
+  });
+}
+
+function clearTemporaryMarks(){
+  const svg=$('japanMap');
+  if(!svg)return;
+  svg.querySelectorAll('.pref-shape.enemy,.pref-shape.near').forEach(pref=>pref.classList.remove('enemy','near'));
+}
+
+function markCompleted(el){
+  if(!el)return;
+  el.classList.add('completed');
+  el.setAttribute('aria-disabled','true');
 }
 
 function setup(){
@@ -264,72 +293,174 @@ function setup(){
 }
 
 function startGame(){
-  if(!mapReady){warning.classList.remove('hidden');warning.textContent='地図を読み込み中です。少し待ってから開始してください。';return}
-  state={theme:THEMES.find(t=>t.id===theme.value),mode:mode.value,ranking:[],i:0,score:0,combo:0,correct:0,wrong:0,maxCombo:0,hintUsed:false,misses:[]};
+  if(!mapReady){
+    warning.classList.remove('hidden');
+    warning.textContent='地図を読み込み中です。少し待ってから開始してください。';
+    return;
+  }
+  if(advanceTimer){clearTimeout(advanceTimer);advanceTimer=null}
+  state={
+    theme:THEMES.find(t=>t.id===theme.value),
+    mode:mode.value,
+    ranking:[],
+    i:0,
+    score:0,
+    combo:0,
+    correct:0,
+    wrong:0,
+    maxCombo:0,
+    hintUsed:false,
+    misses:[],
+    completed:new Set(),
+    locked:false
+  };
   state.ranking=[...PREFS].sort(state.theme.cmp);
   state.limit=state.mode==='challenge10'?10:47;
-  title.classList.add('hidden');result.classList.add('hidden');game.classList.remove('hidden');warning.classList.add('hidden');explain.classList.add('hidden');explain.innerHTML='';hintText.textContent='';drawMap();updatePrompt();
+  title.classList.add('hidden');
+  result.classList.add('hidden');
+  game.classList.remove('hidden');
+  warning.classList.add('hidden');
+  explain.classList.add('hidden');
+  explain.innerHTML='';
+  hintText.textContent='';
+  resetMapVisuals();
+  updatePrompt();
   requestAnimationFrame(()=>game.scrollIntoView({behavior:'smooth',block:'start'}));
 }
 
 function updatePrompt(){
+  clearTemporaryMarks();
   next.textContent=`次は${state.i+1}位（${state.theme.label}）`;
-  score.textContent=state.score+'点';combo.textContent='COMBO '+state.combo;
+  score.textContent=state.score+'点';
+  combo.textContent='COMBO '+state.combo;
   stats.textContent=`正解${state.correct} 不正解${state.wrong} 残り${state.limit-state.i}`;
 }
 
 function answer(id){
-  if(!state.ranking||state.i>=state.limit)return;
+  if(!state.ranking||state.i>=state.limit||state.locked)return;
+
   const el=document.querySelector(`[data-pref-id="${id}"]`);
   if(!el)return;
-  if(el.classList.contains('player')||el.classList.contains('enemy')||el.classList.contains('answer')){hintText.textContent='その県はもう選んだよ！';return}
-  const picked=PREFS.find(p=>p.id===id),target=state.ranking[state.i];
+
+  if(state.completed.has(id)){
+    hintText.textContent='その県の順位はもう確定済みです。別の県を選んでね！';
+    return;
+  }
+
+  const picked=PREFS.find(p=>p.id===id);
+  const target=state.ranking[state.i];
+  if(!picked||!target)return;
+
+  state.locked=true;
+  clearTemporaryMarks();
+
   const rankPicked=state.ranking.findIndex(p=>p.id===id)+1;
   const dist=Math.abs(rankPicked-(state.i+1));
-  const ok=id===target.id,near=state.mode==='kids'&&dist<=2;
+  const ok=id===target.id;
+  const near=state.mode==='kids'&&!ok&&dist<=2;
   let delta=ok?100:near?50:-30;
   if(state.hintUsed)delta-=20;
   state.score+=delta;
-  el.classList.add(ok||near?'player':'enemy');
-  if(!ok&&!near){
-    const answerEl=document.querySelector(`[data-pref-id="${target.id}"]`);
-    if(answerEl)answerEl.classList.add('answer');
-    state.wrong++;state.misses.push(target.name);state.combo=0;
+
+  const targetEl=document.querySelector(`[data-pref-id="${target.id}"]`);
+
+  // この問題の正解県だけを「順位確定済み」にする。
+  // 間違ってタップした県は completed に入れないため、後の問題で再選択できる。
+  state.completed.add(target.id);
+  markCompleted(targetEl);
+
+  if(ok){
+    el.classList.remove('enemy','near','answer');
+    el.classList.add('player');
+    state.correct++;
+    state.combo++;
+  }else if(near){
+    el.classList.remove('enemy');
+    el.classList.add('near');
+    if(targetEl){
+      targetEl.classList.remove('answer');
+      targetEl.classList.add('player');
+    }
+    state.correct++;
+    state.combo++;
   }else{
-    state.correct++;state.combo++;
-    if(state.combo===3)state.score+=100;if(state.combo===5)state.score+=200;if(state.combo===10)state.score+=500;
+    el.classList.remove('near');
+    el.classList.add('enemy');
+    if(targetEl){
+      targetEl.classList.remove('player');
+      targetEl.classList.add('answer');
+    }
+    state.wrong++;
+    state.misses.push(target.name);
+    state.combo=0;
   }
+
+  if(state.combo===3)state.score+=100;
+  if(state.combo===5)state.score+=200;
+  if(state.combo===10)state.score+=500;
   state.maxCombo=Math.max(state.maxCombo,state.combo);
-  const status=ok?'正解':near?'おしい':'不正解';
+
+  const status=ok?'正解':near?'おしい・正解扱い':'不正解';
   explain.classList.remove('hidden');
-  explain.innerHTML=`<h3>${status}！</h3><p>正解県は <b>${target.name}</b>（${state.i+1}位）。</p><p>選んだ県は <b>${picked.name}</b>（${rankPicked}位）。</p><p>値：正解 ${target[state.theme.key].toLocaleString()} / 選択 ${picked[state.theme.key].toLocaleString()}</p><p>県庁所在地：${target.capital}<br>名産：${target.specialty}<br>名所：${target.landmark}</p>`;
-  state.i++;state.hintUsed=false;
-  if(state.i>=state.limit){finish();return}
-  updatePrompt();
+  explain.innerHTML=`<h3>${status}！</h3><p>正解県は <b>${target.name}</b>（${state.i+1}位）。</p><p>選んだ県は <b>${picked.name}</b>（${rankPicked}位）。</p><p>値：正解 ${target[state.theme.key].toLocaleString()} / 選択 ${picked[state.theme.key].toLocaleString()}</p><p>県庁所在地：${target.capital}<br>名産：${target.specialty}<br>名所：${target.landmark}</p>${!ok&&!near?'<p><b>赤くなった県は不正解でも使用済みにはなりません。後の問題でまた選べます。</b></p>':''}`;
+
+  state.hintUsed=false;
+
+  advanceTimer=setTimeout(()=>{
+    advanceTimer=null;
+    state.i++;
+    clearTemporaryMarks();
+    state.locked=false;
+    if(state.i>=state.limit){
+      finish();
+      return;
+    }
+    updatePrompt();
+  },FEEDBACK_DELAY_MS);
 }
 
 function showHint(){
-  if(!state.ranking)return;
+  if(!state.ranking||state.locked)return;
   const t=state.ranking[state.i];
   hintText.textContent=`${t.region}・県庁所在地 ${t.capital}・値 ${t[state.theme.key].toLocaleString()} 付近`;
   state.hintUsed=true;
 }
 
 function finish(){
+  clearTemporaryMarks();
   if(state.mode==='all'&&state.correct===47)state.score+=1000;
-  game.classList.add('hidden');result.classList.remove('hidden');
-  const rate=Math.round(state.correct/state.limit*100),misses=[...new Set(state.misses)].join('、')||'なし';
+  game.classList.add('hidden');
+  result.classList.remove('hidden');
+  const rate=Math.round(state.correct/state.limit*100);
+  const misses=[...new Set(state.misses)].join('、')||'なし';
   result.innerHTML=`<h2>結果</h2><div class="score">${state.score}点</div><p>お題：${state.theme.label}</p><p>モード：${MODE_LABEL[state.mode]||state.mode}</p><p>正解数 ${state.correct} / 不正解数 ${state.wrong}</p><p>正解率 ${rate}% / 最大コンボ ${state.maxCombo}</p><p>間違えた県：${misses}</p><button type="button" id="shareBtn">シェア</button><button type="button" id="againBtn" style="margin-top:8px">もう一度</button><button type="button" id="backBtn" style="margin-top:8px">タイトルへ戻る</button>`;
   safeSet('wolf-best',String(Math.max(+safeGet('wolf-best','0'),state.score)));
-  $('shareBtn').onclick=shareResult;$('againBtn').onclick=startGame;$('backBtn').onclick=backToTitle;
+  $('shareBtn').onclick=shareResult;
+  $('againBtn').onclick=startGame;
+  $('backBtn').onclick=backToTitle;
   result.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function backToTitle(){result.classList.add('hidden');game.classList.add('hidden');title.classList.remove('hidden');drawMap();warning.classList.add('hidden');hintText.textContent='';explain.textContent='';explain.classList.add('hidden');best.textContent='ベスト: '+safeGet('wolf-best','0')+'点';window.scrollTo({top:0,behavior:'smooth'})}
+function backToTitle(){
+  if(advanceTimer){clearTimeout(advanceTimer);advanceTimer=null}
+  result.classList.add('hidden');
+  game.classList.add('hidden');
+  title.classList.remove('hidden');
+  resetMapVisuals();
+  warning.classList.add('hidden');
+  hintText.textContent='';
+  explain.textContent='';
+  explain.classList.add('hidden');
+  best.textContent='ベスト: '+safeGet('wolf-best','0')+'点';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 async function shareResult(){
   const text=`完璧な日本地図ウルフで${state.score}点！`;
-  try{if(navigator.share)await navigator.share({text});else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert('コピーしました')}}catch(error){console.warn('share failed',error)}
+  try{
+    if(navigator.share)await navigator.share({text});
+    else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert('コピーしました')}
+  }catch(error){console.warn('share failed',error)}
 }
 
 function escapeHtml(value){return String(value).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
